@@ -1,32 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
+<h1>Heated bed controller for a 3D printer</h1>
+<div>
+    <h3>
+        Hardware specifications:
+    </h3>
+    <p>
+        <h4>
+            Board:
+        </h4>
+        ESP32-S3 N16R8@240MHz
+    </p>
+    <h3>
+        Objectives:
+    </h3>
+    <p>
+        -Implement a heated bed controller to a 3DCloner simple printer.
+    </p>
 
-<body>
-    <h1>Heated bed controller for a 3D printer</h1>
-    <div>
-        <h3>
-            Hardware specifications:
-        </h3>
-        <p>
-            <h4>
-                Board:
-            </h4>
-            ESP32-S3 N16R8@240MHz
-        </p>
-        <h3>
-            Objectives:
-        </h3>
-        <p>
-            -Implement a heated bed controller to a 3DCloner simple printer.
-        </p>
-
-        <h3>
-            Functionalities:
-        </h3>
-        <p>
-            -
-        </p>
-    </div>
-</body>
-
-</html>
+    <h3>
+        Functionalities:
+    </h3>
+    <p>
+        -
+    </p>
