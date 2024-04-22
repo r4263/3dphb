@@ -1,144 +1,105 @@
-// Libraries
 #include <Arduino.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include <WiFi.h>
-#include <ESPAsyncWebServer.h>
-#include <LittleFS.h>
-#include <AsyncTCP.h>
-#include <AsyncUDP.h>
-#include <NetBIOS.h>
 #include <Adafruit_NeoPixel.h>
-#include "FS.h"
-
+#include <assets/data.h>
+#include <assets/init.h>
 
 // Defines
+#define PIN_NEOPIXEL 48
+#define NUMPIXELS 1
 
+// Constants and variables section
+const char *ssid = "MAURO";
+const char *password = "1003051275";
+const TickType_t xDelay250ms = pdMS_TO_TICKS(250);
+int connectionTries = 0;
 
-// Objects/classes instantiations
-AsyncWebServer server(80);
-Adafruit_NeoPixel status(1, 48, NEO_GRB + NEO_KHZ800);
+ConnectionConfig config = {1, 'Olá'};
 
-// Variable definitions
-const char *ssid = "";
-const char *password = "";
+// Libraries and object declarations
+Adafruit_NeoPixel statusIndicator(NUMPIXELS, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);
 
-// Functions declarations
-void init();
-void statusLED();
+// Task handles
+TaskHandle_t Task1;
+TaskHandle_t wirelessConnectionManager;
 
+// void TaskCore0(void *pvParameters); //
+void connectionMgrTask(void *pvParameters);
 
+void setup()
+{
+  statusIndicator.begin();
+  statusIndicator.setBrightness(5);
+  statusIndicator.fill(0x0000FF);
+  statusIndicator.show();
 
-void setup() {
-  status.begin();
-  init();
-}
-
-void loop() {
-
-}
-
-void statusLED(){
-}
-
-void init(){
   Serial.begin(115200);
-
-  if (!LittleFS.begin())
-  {
-    Serial.println("An Error has occurred while mounting LittleFS");
-    return;
-  }
-
   WiFi.begin(ssid, password);
 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.print(".");
+  Serial.println(config.connectionType);
+  Serial.println(config.SSID);
+
+  while (connectionTries < 20)
+  {
+    statusIndicator.fill(0xFFFF00);
+    statusIndicator.show();
+    if (WiFi.status() != WL_CONNECTED)
+    {
+      Serial.print(". ");
+    }
+    else
+    {
+      Serial.println("");
+      Serial.print("Connected to: ");
+      Serial.println(ssid);
+      Serial.print("IP Address: ");
+      Serial.println(WiFi.localIP());
+
+      statusIndicator.fill(0x00FF00);
+      statusIndicator.show();
+
+      break;
+    }
+    vTaskDelay(xDelay250ms);
+  }
+  if (connectionTries >= 19)
+  {
+    Serial.println("");
+    Serial.print("Unable to connect to ");
+    Serial.println(ssid);
+
+    statusIndicator.fill(0xFF0000);
+    statusIndicator.show();
   }
 
-  Serial.println("\nConnected to Wi-Fi network");
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
-
-  server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
-  server.serveStatic("/static/", LittleFS, "/");
-
-  server.begin();
+  // xTaskCreatePinnedToCore(
+  //     TaskCore0, /* Function */
+  //     "Task1",   /* Task name */
+  //     10000,     /* Stack size */
+  //     NULL,      /* Parameter */
+  //     1,         /* Priority */
+  //     &Task1,    /* Handle */
+  //     0          /* Pinned core */
+  // );
 }
 
-// void loadCredentials() {
-//   EEPROM.begin(512);
-//   EEPROM.get(0, NetworkSSID);
-//   EEPROM.get(0 + sizeof(NetworkSSID), Password);
-//   EEPROM.get(0 + sizeof(NetworkSSID) + sizeof(Password), Gateway);
-//   EEPROM.get(0 + sizeof(NetworkSSID) + sizeof(Password) + sizeof(Gateway), StaticIP);
-//   char ok[2 + 1];
-//   EEPROM.get(0 + sizeof(NetworkSSID) + sizeof(Password) + sizeof(Gateway) + sizeof(StaticIP), ok);
-//   EEPROM.end();
-//   if (String(ok) != String("OK")) {
-//     Serial.println();
-//     Serial.println("ok ausente");
-//     Serial.println();
-//     NetworkSSID[0] = 0;
-//     Password[0] = 0;
-//   }else{
-//   Serial.println();
-//   Serial.println("ok presente");
-//   Serial.println();
-//   }
-//
-//   Serial.println();
-//   Serial.println("Recovered credentials:");
-//   Serial.print("Network SSID: "); Serial.println(NetworkSSID);
-//   Serial.print("Network PSK: "); Serial.println(Password);
-//   Serial.print("Gateway: "); Serial.println(Gateway);
-//   Serial.print("IPv4: "); Serial.println(StaticIP);
+// void connectionMgrTask(void *pvParameters)
+// {
 // }
 
-// void saveCredentials() {
-//   SSIDHolder.toCharArray(NetworkSSID, SSIDHolder.length() + 1);
-//   PSKHolder.toCharArray(Password, PSKHolder.length() + 1);
-//   GatewayHolder.toCharArray(Gateway, GatewayHolder.length() + 1);
-//   StaticIPHolder.toCharArray(StaticIP, StaticIPHolder.length() + 1);
-//
-//   EEPROM.begin(512);
-//   EEPROM.put(0, NetworkSSID);
-//   EEPROM.put(0 + sizeof(NetworkSSID), Password);
-//   EEPROM.put(0 + sizeof(NetworkSSID) + sizeof(Password), Gateway);
-//   EEPROM.put(0 + sizeof(NetworkSSID) + sizeof(Password) + sizeof(Gateway), StaticIP);
-//   char ok[2 + 1] = "OK";
-//   EEPROM.put(0 + sizeof(NetworkSSID) + sizeof(Password) + sizeof(Gateway) + sizeof(StaticIP), ok);
-//   EEPROM.commit();
-//   EEPROM.end();
-// }
+void loop() {}
 
-// void IPconversion(String IPHolder, String GatewayHolder) {
-//   int GatewayIndex = 0, IPIndex = 0;
-//
-//   for (int i = 0; i < IPHolder.length(); i++ )
+// void TaskCore0(void *pvParameters)
+// {
+//   Serial.print("Task1 running on core ");
+//   Serial.println(xPortGetCoreID());
+
+//   while (true)
 //   {
-//     char c = IPHolder[i];
-//     if ( c == '.' )
-//     {
-//       IPIndex++;
-//       continue;
-//     }
-//     IPVector[IPIndex] *= 10;
-//     IPVector[IPIndex] += c - '0';
-//   }
-//
-//   for (int i = 0; i < GatewayHolder.length(); i++ )
-//   {
-//     char c = GatewayHolder[i];
-//     if ( c == '.' )
-//     {
-//       GatewayIndex++;
-//       continue;
-//     }
-//     GatewayVector[GatewayIndex] *= 10;
-//     GatewayVector[GatewayIndex] += c - '0';
+//     Serial.println(xPortGetCoreID());
+//     Serial.print(" toggle");
+//     vTaskDelay(xDelay * 2);
 //   }
 // }
-
-  // status.setPixelColor(0,status.Color(255,255,255));
-  // status.show();
-  // status.clear();
