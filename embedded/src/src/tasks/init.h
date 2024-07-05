@@ -1,9 +1,11 @@
+#ifndef INIT_H
+#define INIT_H
+
 #include <Arduino.h>
+#include <src/data.h>
+#include <src/definitions.h>
 
-TaskHandle_t InitTask;
+extern void Init(void *pvParameters);
+extern TaskHandle_t InitTask;
 
-void Init(void *pvParameters)
-{
-    Serial.print("FUNCIONAAA!");
-    vTaskDelete(InitTask);
-}
+#endif
