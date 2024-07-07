@@ -4,5 +4,6 @@
         Board: ESP32-S3 N16R8@240MHz
     Objectives:
         -Implement a heated bed controller to a 3DCloner simple printer.
+        -Use FreeRTOS as the operating system and thread orchestrator.
     Functionalities:
         -

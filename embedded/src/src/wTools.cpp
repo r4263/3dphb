@@ -36,26 +36,23 @@ String authModeStr(wifi_auth_mode_t encodingType)
     }
 }
 
-String getNearbyNetworks()
+JsonDocument getNearbyNetworks()
 {
-    String networks, nwStr;
     JsonDocument doc;
-    JsonObject network = doc.to<JsonObject>();
+    JsonObject root = doc.to<JsonObject>();
+    JsonArray networksArray = root["networks"].to<JsonArray>();
 
     int n = WiFi.scanNetworks(false, true);
-
     for (int i = 0; i < n; ++i)
     {
+        JsonObject network = networksArray.add<JsonObject>();
         network["SSID"] = ssidTreatment(WiFi.SSID(i));
         network["RSSI"] = WiFi.RSSI(i);
         network["CHANNEL"] = WiFi.channel(i);
         network["ENCTYPE"] = authModeStr(WiFi.encryptionType(i));
-        network["MACADDR"] = WiFi.BSSIDstr(i).c_str();
-
-        serializeJson(doc, nwStr);
-        networks += nwStr;
+        network["MACADDR"] = WiFi.BSSIDstr(i);
     }
 
     WiFi.scanDelete();
-    return networks;
+    return doc;
 }
