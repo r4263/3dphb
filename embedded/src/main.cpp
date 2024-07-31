@@ -1,47 +1,49 @@
-#include <Arduino.h>
-#include <ArduinoJson.h>
-
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <freertos/semphr.h>
-
-#include <src/data.h>
 #include <src/definitions.h>
-#include <src/constants.h>
-
-#include <src/filetools.h>
-
-#include <src/tasks/init.h>
-#include <src/tasks/wManager.h>
-
-//--- Interfaces ---
-Connection networkConfig;
-
-// --- Objects ---
-JsonDocument config;
 
 void setup()
 {
+
+    wMutex = xSemaphoreCreateMutex();
+    stateMutex = xSemaphoreCreateMutex();
+
     Serial.begin(115200);
     initFS();
+
+    if (wMutex == NULL)
+    {
+    }
+    else
+    {
+        Serial.println("Failed to create mutex");
+    }
 
     Serial.println(FS_STAT.STATUS ? FS_INIT_OK : FS_STAT.ERR);
     if (!FS_STAT.STATUS)
         return;
 
-    DeserializationError error = deserializeJson(config, readFile(CONFIGPATH));
+    deserializeJson(config, readFile(CONFIGPATH));
 
     networkConfig.setArgs(config["NETWORK"]);
 
     xTaskCreatePinnedToCore(
         wManager,          /* Function */
         "WirelessManager", /* Task name */
-        3072,              /* Stack size */
+        8192,              /* Stack size */
         NULL,              /* Parameter */
         1,                 /* Priority */
         &wManagerHandle,   /* Handle */
         0                  /* Code ID */
     );
+
+    // xTaskCreatePinnedToCore(
+    //     networkScanner,   /* Function */
+    //     "NetworkScanner", /* Task name */
+    //     2048,             /* Stack size */
+    //     NULL,             /* Parameter */
+    //     0,                /* Priority */
+    //     &nScannerHandle,  /* Handle */
+    //     0                 /* Code ID */
+    // );
 
     // xTaskCreate(
     //     Init,                 /* Function */
@@ -55,4 +57,21 @@ void setup()
 
 void loop()
 {
+    String command;
+    if (Serial.available())
+    {
+        command = Serial.readString();
+    }
+
+    if (command == "reboot")
+    {
+        command = "";
+        ESP.restart();
+    }
+    vTaskDelay(pdMS_TO_TICKS(250));
+
+    Serial.print("Contagem: ");
+    Serial.println(i);
+
+    i++;
 }
