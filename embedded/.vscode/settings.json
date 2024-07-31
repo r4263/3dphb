@@ -1,6 +1,0 @@
-{
-    "cmake.sourceDirectory": "C:/Users/Maycon/Documents/GitHub/3dphb/.pio/libdeps/esp32-s3-devkitc-1-N16R8/ArduinoJson/src",
-    "files.associations": {
-        "freertos.h": "c"
-    }
-}
