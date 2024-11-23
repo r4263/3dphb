@@ -4,7 +4,9 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <ArduinoJson.h>
+#include <src/data/macros.h>
+#include <src/data/identifiers.h>
 
-JsonDocument getNearbyNetworks();
+String getNearbyNetworks();
 
 #endif

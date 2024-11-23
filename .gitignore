@@ -1,6 +1,16 @@
 embedded/.pio
 embedded/.vscode/
-embedded/data/config.json
-embedded/web-interface/*
+embedded/data/web/portal/*
+embedded/data/web/panel/*
+embedded/config.json
+embedded/src/temp_codes
+
 .vscode
-android app/*
+
+captive-portal/node_modules
+captive-portal/build
+
+control-panel/node_modules
+control-panel/build
+
+/mobile/node_modules

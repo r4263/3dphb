@@ -1,0 +1,4 @@
+#ifndef CAPTIVEPORTAL_H
+#define CAPTIVEPORTAL_H
+
+#endif

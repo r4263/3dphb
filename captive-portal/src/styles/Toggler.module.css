@@ -1,0 +1,78 @@
+.container{
+    background-color: rgba(230,230,230,0.9);
+    display: flex;
+    flex-direction: row;
+    /* width: 15px; */
+    height: 70px;
+    position: absolute;
+    right: 0;
+    top: 100px;
+    z-index: 5;
+    border-radius: 5px 0 0 5px;
+    align-items: center;
+    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+}
+
+.icon {
+    width: 40px;
+    height: 40px;
+    color: rgb(70,70,70);
+    margin-left: 10px;
+    margin-right: 10px;
+    filter: drop-shadow(rgba(0, 0, 0, 0.2) 0px 2px 2px);
+    cursor: pointer;
+
+    transition: scale .3s cubic-bezier(0.175, 0.885, 0.32, 1.275), color .1s ease;
+
+    &:hover {
+        scale: 1.05;
+
+    }
+
+    &:active {
+        color: rgb(0, 0, 0);
+        scale: 0.95;
+    }
+}
+
+.collapsible{
+    display: flex;
+    overflow: hidden;
+    transition: max-width .5s ease;
+}
+
+.item{
+    width: 50px;
+    height: 50px;
+    margin: 5px;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: scale .15s ease;
+    box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+
+    &:hover{
+        /* filter: brightness(80%); */
+        scale: 1.1;
+    }
+}
+
+.circle {
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    content-visibility: hidden;
+    transition: all .5s ease;
+    color: white;
+    text-align: center;
+    align-content: center;
+    font-size: 8pt;
+
+    &:hover{
+        content-visibility: visible;
+    }
+}
+
+/* .iconButton{
+    display: flex;
+    
+} */

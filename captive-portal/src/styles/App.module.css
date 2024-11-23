@@ -1,0 +1,22 @@
+.background{
+    width: 100vw;
+    height: 100vh;
+    position: absolute;
+    /* background: linear-gradient(0deg, rgba(179,28,69,1) 0%, rgba(210,57,57,1) 100%); */
+    /* background: linear-gradient(0deg, rgb(29, 163, 62) 0%, rgba(57,210,141,1) 100%); */
+    align-content: center;
+    display: flex;
+}
+
+.darkBg{
+    width: 100vw;
+    height: 100vh;
+    position: absolute;
+    z-index: 2;
+    background-color: rgba(10,10,10,0.8);
+    backdrop-filter: blur(5px);
+    display: none;
+    opacity: 0;
+
+    transition: display .5s ease, opacity .5s ease;
+}

@@ -1,16 +1,27 @@
 #include <src/tasks/networkScanner.h>
 
-TaskHandle_t nScannerHandle;
-
 void networkScanner(void *pvParameters)
 {
-    xLastWakeTime = xTaskGetTickCount();
+    // TickType_t xLastWakeTime = xTaskGetTickCount();
 
-    for (;;)
-    {
-        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(30000));
-        Serial.println("tick");
+    uint8_t networkCount = WiFi.scanNetworks();
 
-        // Perform action here.
-    }
+    String scanContent;
+
+    // for (;;)
+    // {
+    //     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(30000));
+
+    DynamicJsonDocument doc(1024);
+
+    JsonArray array = doc.to<JsonArray>();
+
+    JsonObject network = array.createNestedObject();
+    network["ssid"] = "teste";
+    network["encType"] = "Open";
+    network["rssi"] = -72;
+    network["channel"] = 6;
+
+    serializeJson(doc, scanContent);
+    // }
 }
