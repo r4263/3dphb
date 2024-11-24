@@ -14,11 +14,11 @@ WiFiState LastWiFiState = OFF;
 
 void networkManager(void *pvParameters)
 {
-  // NETWORK_STATE.setSTASSID("ssid");
-  // NETWORK_STATE.setSTAPWK("pass");
-  // NETWORK_STATE.setWiFiMode(AP_MODE);
-
   setUpDNSServer(dnsServer);
+  setUpCaptivePortalServer(captivePortal);
+  setUpAPIServer(api);
+
+  NETWORK_STATE.setWiFiMode(AP_MODE);
 
   /* Default headers */
   DefaultHeaders::Instance()
@@ -34,14 +34,18 @@ void networkManager(void *pvParameters)
     // if it's not transitioning modes
     if (NETWORK_STATE.getWiFiState() != TRANSITIONING)
     {
+      Serial.println("Está no estado operacional");
       switch (NETWORK_STATE.getWiFiMode())
       {
       case AP_MODE: /* In AP mode, just process the dns requests */
+
+        Serial.println("modo AP");
         dnsServer.processNextRequest();
-        vTaskDelay(pdMS_TO_TICKS(30));
+        /* code */
         break;
 
       case STA_MODE:
+        Serial.println("modo STA");
         /* code */
         break;
 
@@ -52,8 +56,10 @@ void networkManager(void *pvParameters)
     }
     else
     {
+      Serial.println("entrou no modo de transição");
       handleModeTransitioning(LastWiFiMode, NETWORK_STATE, captivePortal, controlPanel, api, dnsServer);
     }
+    vTaskDelay(pdMS_TO_TICKS(30));
   }
 }
 

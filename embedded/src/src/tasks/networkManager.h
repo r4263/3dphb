@@ -12,6 +12,7 @@
 #include <DNSServer.h>
 #include <esp_wifi.h>
 #include <src/network/handlers.h>
+#include <src/data/filetools.h>
 
 #define filesystem APPLICATION_STATE.filesystem
 

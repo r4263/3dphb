@@ -14,7 +14,6 @@ bool checkFilesystem(fs::LittleFSFS fs)
 
 void initFS()
 {
-    Serial.println("Init FS");
     bool fsState;
 
     if (!checkFilesystem(filesystem))

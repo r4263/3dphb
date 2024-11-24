@@ -19,9 +19,17 @@ extern void handleModeTransitioning(WiFiMode &lastMode,
                                     AsyncWebServer &api,
                                     DNSServer &dnsServer);
 
+extern void toggleHandlers(ONOFF action,
+                           WiFiMode mode,
+                           AsyncWebServer &captivePortal,
+                           AsyncWebServer &controlPanel,
+                           AsyncWebServer &api,
+                           DNSServer &dnsServer,
+                           const IPAddress &localIp);
+
 extern void setUpDNSServer(DNSServer &server);
 extern void setUpAPIServer(AsyncWebServer &server);
-extern void setUpCaptivePortalServer(AsyncWebServer &server, IPAddress &localIP);
+extern void setUpCaptivePortalServer(AsyncWebServer &server);
 extern void startSoftAccessPoint(const char *ssid, const char *password, const IPAddress &localIP, const IPAddress &gatewayIP, const IPAddress &subnetMask);
 
 #endif

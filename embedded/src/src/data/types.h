@@ -40,4 +40,14 @@ enum WiFiState
     OFF
 };
 
+/**
+ * OFF = 0
+ * ON = 1
+ */
+enum ONOFF
+{
+    off,
+    on
+};
+
 #endif

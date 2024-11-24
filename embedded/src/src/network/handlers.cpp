@@ -51,44 +51,46 @@ void handleModeTransitioning(WiFiMode &lastMode,
 
         Serial.println("Turning on...");
 
-        if (WiFi.getMode() != WIFI_AP_STA)
-            WiFi.mode(WIFI_AP_STA);
-
         /**
          * Turn off all servers that won't be used in the new mode
          * if the code is reaching this point, it assumes that is
          * already validated and will just switch between the remaining modes
          * obs: the remaining modes share the api server
          */
-        switch (lastMode)
+        toggleHandlers(off, lastMode, captivePortal, controlPanel, api, dnsServer, localIP);
+
+        if (WiFi.getMode() != WIFI_AP_STA)
+            WiFi.mode(WIFI_AP_STA);
+
+        // Turn WiFi on
+        Serial.println("Turning wifi on");
+        switch (currentMode)
         {
-        case AP_MODE: /* Turn captive portal and DNS server off. Initialize STA mode essentials */
-            Serial.println("Turn on AP mode");
-            captivePortal.end();
-            dnsServer.stop();
+        case AP_MODE:
+            if (WiFi.getMode() != WIFI_OFF)
+                WiFi.disconnect();
 
-            WiFi.softAPdisconnect();
-
-
-            controlPanel.begin();
-            // --> UDP Listener server here <--
-            WiFi.begin(netState.getSTASSID(), netState.getAPPWK());
+            Serial.println("Turning on softap");
+            startSoftAccessPoint(ssid, password, localIP, gatewayIP, subnetMask);
+            Serial.println(ssid);
+            Serial.println(password);
 
             break;
 
-        case STA_MODE: /* Turn control panel and UDP listener off. Initialize AP mode essentials */
-            Serial.println("Turn on STA mode");
-            controlPanel.end();
-            // --> UDP Listener server here <--
+        case STA_MODE:
+            if (WiFi.getMode() != WIFI_OFF)
+                WiFi.softAPdisconnect();
 
-            WiFi.disconnect();
-
-            dnsServer.start(53, "*", localIP);
-            captivePortal.begin();
-            startSoftAccessPoint(ssid, password, localIP, gatewayIP, subnetMask);
-
+            Serial.println("Turning on sta");
+            WiFi.begin(netState.getSTASSID(), netState.getAPPWK());
             break;
         }
+
+        // Toggle the handlers on
+        toggleHandlers(on, currentMode, captivePortal, controlPanel, api, dnsServer, localIP);
+
+        Serial.println(WiFi.getMode());
+        Serial.println(WiFi.getHostname());
 
         netState.setWiFiState(OPERATIONAL);
         lastMode = (WiFiMode)currentMode; // Casting, trying not to pass direct memory reference that could mess it all
@@ -112,7 +114,7 @@ void setUpAPIServer(AsyncWebServer &server)
                       { request->send(401); });
 }
 
-void setUpCaptivePortalServer(AsyncWebServer &server, const IPAddress &localIP)
+void setUpCaptivePortalServer(AsyncWebServer &server)
 {
     server.on("/204*", [](AsyncWebServerRequest *request)
               { request->send(404); });
@@ -154,15 +156,50 @@ void setUpCaptivePortalServer(AsyncWebServer &server, const IPAddress &localIP)
                       { request->redirect(localIPURL); });
 }
 
-// void setUpDNSServer(DNSServer &dnsServer, const IPAddress &localIP)
 void setUpDNSServer(DNSServer &dnsServer)
 {
-    dnsServer.setTTL(3600);
-    // dnsServer.start(53, "*", localIP);
-
     // dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
-    // dnsServer.setTTL(3600);
-    // dnsServer.start(53, "*", WiFi.softAPIP());
+    dnsServer.setTTL(3600);
+}
+
+void toggleHandlers(ONOFF action,
+                    WiFiMode mode,
+                    AsyncWebServer &captivePortal,
+                    AsyncWebServer &controlPanel,
+                    AsyncWebServer &api,
+                    DNSServer &dnsServer,
+                    const IPAddress &localIp) // Use const IPAddress&
+{
+    if (action)
+    {
+        switch (mode)
+        {
+        case AP_MODE:
+            captivePortal.begin();
+            dnsServer.start(53, "*", localIp);
+            break;
+
+        case STA_MODE:
+            controlPanel.begin();
+            // --> UDP Listener server here <--
+            break;
+        }
+    }
+    else
+    {
+        switch (mode)
+        {
+        case AP_MODE:
+            captivePortal.end();
+            dnsServer.stop();
+            break;
+
+        case STA_MODE:
+            controlPanel.end();
+            // --> UDP Listener server here <--
+            break;
+        }
+    }
 }
 
 void startSoftAccessPoint(const char *ssid, const char *password, const IPAddress &localIP, const IPAddress &gatewayIP, const IPAddress &subnetMask)
@@ -173,11 +210,11 @@ void startSoftAccessPoint(const char *ssid, const char *password, const IPAddres
 
     WiFi.softAP(ssid, password, WIFI_CHANNEL, 0, MAX_CLIENTS);
 
-    esp_wifi_stop();
-    esp_wifi_deinit();
-    wifi_init_config_t my_config = WIFI_INIT_CONFIG_DEFAULT();
-    my_config.ampdu_rx_enable = false;
-    esp_wifi_init(&my_config);
-    esp_wifi_start();
+    // esp_wifi_stop();
+    // esp_wifi_deinit();
+    // wifi_init_config_t my_config = WIFI_INIT_CONFIG_DEFAULT();
+    // my_config.ampdu_rx_enable = false;
+    // esp_wifi_init(&my_config);
+    // esp_wifi_start();
     vTaskDelay(100 / portTICK_PERIOD_MS);
 }
