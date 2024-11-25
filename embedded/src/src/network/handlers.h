@@ -32,4 +32,7 @@ extern void setUpAPIServer(AsyncWebServer &server);
 extern void setUpCaptivePortalServer(AsyncWebServer &server);
 extern void startSoftAccessPoint(const char *ssid, const char *password, const IPAddress &localIP, const IPAddress &gatewayIP, const IPAddress &subnetMask);
 
+wl_status_t connect(String ssid, String password, u8_t tries, u16_t delay);
+extern wl_status_t disconnect(WiFiMode mode);
+
 #endif

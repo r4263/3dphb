@@ -25,21 +25,7 @@ void handleModeTransitioning(WiFiMode &lastMode,
     switch (currentMode)
     {
     case IDLE: /* if it goes to IDLE mode, turn all off */
-        switch (lastMode)
-        {
-        case AP_MODE: /* Turn API server, DNS server and captive portal off */
-            Serial.println("Turn off AP mode");
-            captivePortal.end();
-            dnsServer.stop();
-            break;
-
-        case STA_MODE: /* Turn control panel, API server and UDP listener off */
-            Serial.println("Turn off STA mode");
-            controlPanel.end();
-            // --> UDP Listener server here <--
-            break;
-        }
-
+        toggleHandlers(off, lastMode, captivePortal, controlPanel, api, dnsServer, localIP);
         api.end(); // Shared between the AP and STA modes
 
         WiFi.mode(WIFI_OFF);        /* Turn WiFi off to reduce consumption and relief CPU resources */
@@ -49,8 +35,6 @@ void handleModeTransitioning(WiFiMode &lastMode,
 
     default: /* If it's not to go to idle mode */
 
-        Serial.println("Turning on...");
-
         /**
          * Turn off all servers that won't be used in the new mode
          * if the code is reaching this point, it assumes that is
@@ -59,42 +43,34 @@ void handleModeTransitioning(WiFiMode &lastMode,
          */
         toggleHandlers(off, lastMode, captivePortal, controlPanel, api, dnsServer, localIP);
 
-        if (WiFi.getMode() != WIFI_AP_STA)
-            WiFi.mode(WIFI_AP_STA);
-
         // Turn WiFi on
-        Serial.println("Turning wifi on");
+        // if (WiFi.getMode() != WIFI_AP_STA)
+        //     WiFi.mode(WIFI_AP_STA);
+
+        // Disconnects from the last mode informed
+        if (WiFi.getMode() != WIFI_OFF)
+            disconnect(lastMode);
+
         switch (currentMode)
         {
         case AP_MODE:
-            if (WiFi.getMode() != WIFI_OFF)
-                WiFi.disconnect();
-
-            Serial.println("Turning on softap");
+            WiFi.mode(WIFI_AP);
+            Serial.println("AP MODE INIT");
             startSoftAccessPoint(ssid, password, localIP, gatewayIP, subnetMask);
-            Serial.println(ssid);
-            Serial.println(password);
-
             break;
 
         case STA_MODE:
-            if (WiFi.getMode() != WIFI_OFF)
-                WiFi.softAPdisconnect();
-
-            Serial.println("Turning on sta");
-            WiFi.begin(netState.getSTASSID(), netState.getAPPWK());
+            WiFi.mode(WIFI_STA);
+            Serial.println("STA MODE INIT");
+            netState.connected(connect(netState.getSTASSID(), netState.getSTAPWK(), 25, 250) == WL_CONNECTED);
             break;
         }
 
         // Toggle the handlers on
         toggleHandlers(on, currentMode, captivePortal, controlPanel, api, dnsServer, localIP);
 
-        Serial.println(WiFi.getMode());
-        Serial.println(WiFi.getHostname());
-
         netState.setWiFiState(OPERATIONAL);
         lastMode = (WiFiMode)currentMode; // Casting, trying not to pass direct memory reference that could mess it all
-        Serial.println("Passed");
         break;
     }
 }
@@ -103,6 +79,8 @@ void setUpAPIServer(AsyncWebServer &server)
 {
     server.on("/teste", HTTP_POST, [](AsyncWebServerRequest *request)
               {
+
+                NETWORK_STATE.setWiFiMode(AP_MODE);
 
 				IPAddress clientIP = request->client()->remoteIP();
 
@@ -184,6 +162,7 @@ void toggleHandlers(ONOFF action,
             // --> UDP Listener server here <--
             break;
         }
+        api.begin();
     }
     else
     {
@@ -204,8 +183,6 @@ void toggleHandlers(ONOFF action,
 
 void startSoftAccessPoint(const char *ssid, const char *password, const IPAddress &localIP, const IPAddress &gatewayIP, const IPAddress &subnetMask)
 {
-    WiFi.mode(WIFI_MODE_AP);
-
     WiFi.softAPConfig(localIP, gatewayIP, subnetMask);
 
     WiFi.softAP(ssid, password, WIFI_CHANNEL, 0, MAX_CLIENTS);
@@ -217,4 +194,29 @@ void startSoftAccessPoint(const char *ssid, const char *password, const IPAddres
     // esp_wifi_init(&my_config);
     // esp_wifi_start();
     vTaskDelay(100 / portTICK_PERIOD_MS);
+}
+
+wl_status_t connect(String ssid, String password, u8_t tries, u16_t delay)
+{
+    WiFi.disconnect();
+
+    WiFi.begin(ssid, password);
+
+    u8_t count = 0;
+    do
+    {
+        vTaskDelay(pdMS_TO_TICKS(delay));
+        count++;
+    } while ((WiFi.status() != WL_CONNECTED) && (count < tries));
+
+    return WiFi.status();
+}
+
+wl_status_t disconnect(WiFiMode mode)
+{
+    if (mode == AP_MODE)
+        WiFi.softAPdisconnect(true);
+    else
+        WiFi.disconnect();
+    return WiFi.status();
 }

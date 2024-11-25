@@ -11,6 +11,7 @@ typedef struct
 {
     WiFiMode wifi_mode = IDLE;
     WiFiState wifi_state = OFF;
+    boolean wifi_sta_is_connected = false;
     uint16_t wifi_scan_interval;
     String ap_ssid;
     String ap_pwk;
@@ -43,6 +44,9 @@ typedef struct
     String getAPPWK(void);
     String getSTASSID(void);
     String getSTAPWK(void);
+
+    void connected(boolean state);
+    boolean isConnected(void);
 
 } NetworkState;
 

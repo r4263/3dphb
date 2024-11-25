@@ -110,3 +110,16 @@ String NetworkState::getSTAPWK(void)
 
     return pass;
 }
+
+void NetworkState::connected(boolean state)
+{
+    SEMAPHORE_WRAPPER(networkStateMutex, { this->wifi_sta_is_connected = state; });
+}
+
+boolean NetworkState::isConnected(void)
+{
+    boolean state;
+    SEMAPHORE_WRAPPER(networkStateMutex, { state = this->wifi_sta_is_connected; });
+
+    return state;
+}
