@@ -63,31 +63,6 @@ void networkManager(void *pvParameters)
   }
 }
 
-// wl_status_t connect(u8_t tries = 25, u16_t delay = 250)
-// {
-//   SEMAPHORE_WRAPPER(networkOperationsMutex, {
-//     WiFi.mode(WIFI_STA);
-//     WiFi.disconnect();
-
-//     // WiFi.begin(networkConfig.SSID, networkConfig.PASS);
-
-//     u8_t count = 0;
-//     do
-//     {
-//       vTaskDelay(pdMS_TO_TICKS(delay));
-//       count++;
-//     } while ((WiFi.status() != WL_CONNECTED) && (count < tries));
-//   });
-
-//   return WiFi.status();
-// }
-
-// wl_status_t disconnect()
-// {
-//   SEMAPHORE_WRAPPER(networkOperationsMutex, { WiFi.disconnect(); });
-//   return WiFi.status();
-// }
-
 // void ap()
 // {
 //   // if (xSemaphoreTake(wMutex, portMAX_DELAY) == pdTRUE)

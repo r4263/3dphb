@@ -146,7 +146,7 @@ void toggleHandlers(ONOFF action,
                     AsyncWebServer &controlPanel,
                     AsyncWebServer &api,
                     DNSServer &dnsServer,
-                    const IPAddress &localIp) // Use const IPAddress&
+                    const IPAddress &localIp)
 {
     if (action)
     {

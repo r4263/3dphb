@@ -9,10 +9,12 @@ void initApplicationVitals(void)
     // Initialize State vitals and control access mutexes
     initializeMutexes();
 
-    initializePinout();
-
     // Initialize filesystem(before screen to avoid SPI conflict - which can be dangerous, but very unlikely to happen)
     initFS();
+
+    initDatabase();
+
+    initializePinout();
 
     initializeTasks(); // The actual infinite running tasks
 }

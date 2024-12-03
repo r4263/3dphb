@@ -6,11 +6,12 @@
 #include <AsyncTCP.h>
 #include <DNSServer.h>
 #include <esp_wifi.h>
+#include <src/data/macros.h>
+
+#define filesystem APPLICATION_STATE.filesystem
 
 #define MAX_CLIENTS 4
 #define WIFI_CHANNEL 6
-
-#define filesystem APPLICATION_STATE.filesystem
 
 extern void handleModeTransitioning(WiFiMode &lastMode,
                                     NetworkState &netState,
