@@ -79,9 +79,6 @@ void setUpAPIServer(AsyncWebServer &server)
 {
     server.on("/teste", HTTP_POST, [](AsyncWebServerRequest *request)
               {
-
-                NETWORK_STATE.setWiFiMode(AP_MODE);
-
 				IPAddress clientIP = request->client()->remoteIP();
 
 				String res = "{/""mac/"":""/"+clientIP.toString()+"/""}";
