@@ -7,8 +7,34 @@
 #include <DNSServer.h>
 #include <esp_wifi.h>
 #include <src/data/macros.h>
+#include <src/network/request_middleware.h>
 
 #define filesystem APPLICATION_STATE.filesystem
+#define noBodyRequestHandler [](AsyncWebServerRequest *request) { request->send(401); }
+
+// Modular API endpoint macro
+#define ATTACHROUTE(route, server, code)                                                                \
+    server.on(route, HTTP_POST, noBodyRequestHandler, nullptr,                                          \
+              [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) \
+              {                                                                                         \
+                  if (!validateRequest(request, data, len))                                             \
+                  {                                                                                     \
+                      request->send(401);                                                               \
+                      return;                                                                           \
+                  }                                                                                     \
+                                                                                                        \
+                  StaticJsonDocument<256> requestBody;                                                  \
+                  DeserializationError error = deserializeJson(requestBody, data, len);                 \
+                  if (error)                                                                            \
+                  {                                                                                     \
+                      request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");           \
+                      return;                                                                           \
+                  }                                                                                     \
+                                                                                                        \
+                  {                                                                                     \
+                      code                                                                              \
+                  }                                                                                     \
+              });
 
 #define MAX_CLIENTS 4
 #define WIFI_CHANNEL 6

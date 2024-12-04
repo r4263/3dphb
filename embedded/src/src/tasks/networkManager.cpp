@@ -22,7 +22,7 @@ void networkManager(void *pvParameters)
   setUpAPIServer(api);
 
   // NETWORK_STATE.setWiFiMode(STA_MODE);
-  // NETWORK_STATE.setWiFiMode(AP_MODE);
+  NETWORK_STATE.setWiFiMode(AP_MODE);
 
   /* Default headers */
   DefaultHeaders::Instance()
@@ -62,56 +62,3 @@ void networkManager(void *pvParameters)
     vTaskDelay(pdMS_TO_TICKS(30));
   }
 }
-
-// void ap()
-// {
-//   // if (xSemaphoreTake(wMutex, portMAX_DELAY) == pdTRUE)
-//   // {
-//   WiFi.disconnect();
-//   WiFi.mode(WIFI_AP);
-//   // WiFi.softAP(networkConfig.INTERNALSSID, networkConfig.INTERNALPASS);
-//   //     xSemaphoreGive(wMutex);
-//   // }
-// }
-
-// void attachUDPListeners()
-// {
-// if (xSemaphoreTake(wMutex, portMAX_DELAY) == pdTRUE)
-// {
-// server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-// {
-// Serial.println(request->args());
-// //AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_SERVICE_UNAVAILABLE);
-// AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_OK, "application/json", "{'response': 'ok'}");
-// // AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_SERVICE_UNAVAILABLE, "application/json",
-// "{'response':'ok'}");
-// response->addHeader("Server", "ESP Async Web Server");
-// request->send(response); });
-
-// if (udp.listenMulticast(networkConfig.MCASTGROUP, networkConfig.MCASTPORT))
-// {
-// Serial.print("UDP Multicast Listener started at: ");
-// Serial.println(networkConfig.MCASTGROUP);
-// udp.onPacket([](AsyncUDPPacket packet)
-// {
-// Serial.print("UDP packet received from ");
-// Serial.print(packet.remoteIP());
-// Serial.print(":");
-// Serial.print(packet.remotePort());
-// Serial.print(", type: ");
-// Serial.print(packet.isBroadcast() ? "Broadcast" : (packet.isMulticast() ? "Multicast" : "Normal Packet"));
-// Serial.print(", size: ");
-// Serial.print(packet.length());
-// Serial.print(", data: ");
-// Serial.println((char *)packet.data());
-// // udp.print("Received!");
-// });
-// }
-// else
-// {
-// Serial.println("Failed to initialize UDP listener.");
-// }
-
-// server.begin();
-// }
-// }

@@ -77,13 +77,42 @@ void handleModeTransitioning(WiFiMode &lastMode,
 
 void setUpAPIServer(AsyncWebServer &server)
 {
-    server.on("/teste", HTTP_POST, [](AsyncWebServerRequest *request)
-              {
-				IPAddress clientIP = request->client()->remoteIP();
+    ATTACHROUTE("/state/get", server, {
+        StaticJsonDocument<256> jsonResponse;
 
-				String res = "{/""mac/"":""/"+clientIP.toString()+"/""}";
+        jsonResponse["kp"] = APPLICATION_STATE.getKp();
+        jsonResponse["ki"] = APPLICATION_STATE.getKi();
+        jsonResponse["kd"] = APPLICATION_STATE.getKd();
+        jsonResponse["setpoint"] = APPLICATION_STATE.getSetpoint();
+        jsonResponse["bed_temp"] = APPLICATION_STATE.getBedTemperature();
+        jsonResponse["cpu_temp"] = APPLICATION_STATE.getCPUTemperature();
+        jsonResponse["heater_enabled"] = APPLICATION_STATE.getOutputState();
 
-				request->send(200, "application/json", res); });
+        String serializedResponse;
+        serializeJson(jsonResponse, serializedResponse);
+
+        request->send(200, "application/json", serializedResponse);
+    });
+
+    ATTACHROUTE("/state/set/setpoint", server, {
+        request->send(200);
+    });
+
+    ATTACHROUTE("/state/set/kp", server, {
+        request->send(200);
+    });
+
+    ATTACHROUTE("/state/set/ki", server, {
+        request->send(200);
+    });
+
+    ATTACHROUTE("/state/set/kd", server, {
+        request->send(200);
+    });
+
+    ATTACHROUTE("/state/heater", server, {
+        request->send(200);
+    });
 
     server.onNotFound([](AsyncWebServerRequest *request)
                       { request->send(401); });
