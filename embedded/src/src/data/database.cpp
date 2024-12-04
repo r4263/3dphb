@@ -6,7 +6,7 @@ const char *data = "Callback function called";
 sqlite3 *db1;
 int rc;
 
-StaticJsonDocument<1024> doc;
+JsonDocument doc;
 
 static int callback(void *data, int argc, char **argv, char **azColName)
 {

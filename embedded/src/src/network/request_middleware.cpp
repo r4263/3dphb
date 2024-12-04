@@ -4,7 +4,7 @@ bool validateRequest(AsyncWebServerRequest *request, uint8_t *data, size_t len)
 {
     String expectedToken = generateSHA256(request->client()->remoteIP().toString());
 
-    StaticJsonDocument<256> jsonDoc;
+    JsonDocument jsonDoc;
     DeserializationError error = deserializeJson(jsonDoc, data, len);
 
     if (error)
@@ -13,7 +13,7 @@ bool validateRequest(AsyncWebServerRequest *request, uint8_t *data, size_t len)
         return false;
     }
 
-    if (!jsonDoc.containsKey("token") || jsonDoc["token"].as<String>() != expectedToken)
+    if (jsonDoc["token"].as<String>() != expectedToken)
     {
         return false;
     }

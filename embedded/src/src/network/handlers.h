@@ -8,6 +8,7 @@
 #include <esp_wifi.h>
 #include <src/data/macros.h>
 #include <src/network/request_middleware.h>
+#include <src/data/database.h>
 
 #define filesystem APPLICATION_STATE.filesystem
 #define noBodyRequestHandler [](AsyncWebServerRequest *request) { request->send(401); }
@@ -23,7 +24,7 @@
                       return;                                                                           \
                   }                                                                                     \
                                                                                                         \
-                  StaticJsonDocument<256> requestBody;                                                  \
+                  JsonDocument requestBody;                                                             \
                   DeserializationError error = deserializeJson(requestBody, data, len);                 \
                   if (error)                                                                            \
                   {                                                                                     \
@@ -35,6 +36,13 @@
                       code                                                                              \
                   }                                                                                     \
               });
+
+#define KEYVERIFICATION(key, dataType)    \
+    if (!requestBody[key].is<dataType>()) \
+    {                                     \
+        request->send(400);               \
+        return;                           \
+    }
 
 #define MAX_CLIENTS 4
 #define WIFI_CHANNEL 6

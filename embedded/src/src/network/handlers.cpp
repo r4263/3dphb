@@ -78,7 +78,7 @@ void handleModeTransitioning(WiFiMode &lastMode,
 void setUpAPIServer(AsyncWebServer &server)
 {
     ATTACHROUTE("/state/get", server, {
-        StaticJsonDocument<256> jsonResponse;
+        JsonDocument jsonResponse;
 
         jsonResponse["kp"] = APPLICATION_STATE.getKp();
         jsonResponse["ki"] = APPLICATION_STATE.getKi();
@@ -95,22 +95,64 @@ void setUpAPIServer(AsyncWebServer &server)
     });
 
     ATTACHROUTE("/state/set/setpoint", server, {
+        // if there's no setpoint key or is not float, return Bad request
+        KEYVERIFICATION("setpoint", int);
+
+        // Saving to the application state, cast to double to prevent errors
+        APPLICATION_STATE.setSetpoint(requestBody["setpoint"].as<double>());
+
         request->send(200);
     });
 
     ATTACHROUTE("/state/set/kp", server, {
+        // if there's no kp key or is not float, return Bad request
+        KEYVERIFICATION("kp", float);
+
+        double kp = requestBody["kp"].as<double>();
+        APPLICATION_STATE.setKp(kp);
+
+        if (!requestBody["volatile"].as<bool>())
+        {
+            queryDatabase(("UPDATE configs SET kp = " + String(kp, 3) + ";").c_str(), false);
+        }
+
         request->send(200);
     });
 
     ATTACHROUTE("/state/set/ki", server, {
+        // if there's no ki key or is not float, return Bad request
+        KEYVERIFICATION("ki", float);
+
+        double ki = requestBody["ki"].as<double>();
+        APPLICATION_STATE.setKp(ki);
+
+        if (!requestBody["volatile"].as<bool>())
+        {
+            queryDatabase(("UPDATE configs SET ki = " + String(ki, 6) + ";").c_str(), false);
+        }
+
         request->send(200);
     });
 
     ATTACHROUTE("/state/set/kd", server, {
+        // if there's no kd key or is not float, return Bad request
+        KEYVERIFICATION("kd", float);
+
+        double kd = requestBody["kd"].as<double>();
+        APPLICATION_STATE.setKp(kd);
+
+        if (!requestBody["volatile"].as<bool>())
+        {
+            queryDatabase(("UPDATE configs SET kd = " + String(kd, 3) + ";").c_str(), false);
+        }
+
         request->send(200);
     });
 
     ATTACHROUTE("/state/heater", server, {
+        // if there's no heater_enabled key or is not bool, return Bad request
+        KEYVERIFICATION("heater_enable", float);
+
         request->send(200);
     });
 
