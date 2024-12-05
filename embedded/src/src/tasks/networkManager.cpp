@@ -7,10 +7,13 @@ DNSServer dnsServer;
 AsyncWebServer captivePortal(80);
 AsyncWebServer controlPanel(80);
 AsyncWebServer api(9000);
+AsyncWebSocket ws("/ws");
 
 // Local state storing
 WiFiMode LastWiFiMode = IDLE;
 WiFiState LastWiFiState = OFF;
+
+long lastTime = 0;
 
 void networkManager(void *pvParameters)
 {
@@ -41,7 +44,15 @@ void networkManager(void *pvParameters)
       switch (NETWORK_STATE.getWiFiMode())
       {
       case AP_MODE: /* In AP mode, just process the dns requests */
+
+        if ((millis() - lastTime) > WEBSOCKET_REFRESH_RATE)
+        {
+          handleWebSocket(ws);
+          lastTime = millis();
+        }
+
         dnsServer.processNextRequest();
+        ws.cleanupClients();
         /* code */
         break;
 
@@ -57,7 +68,7 @@ void networkManager(void *pvParameters)
     }
     else
     {
-      handleModeTransitioning(LastWiFiMode, NETWORK_STATE, captivePortal, controlPanel, api, dnsServer);
+      handleModeTransitioning(LastWiFiMode, NETWORK_STATE, captivePortal, controlPanel, api, dnsServer, ws);
     }
     vTaskDelay(pdMS_TO_TICKS(30));
   }

@@ -47,25 +47,31 @@
 #define MAX_CLIENTS 4
 #define WIFI_CHANNEL 6
 
-extern void handleModeTransitioning(WiFiMode &lastMode,
-                                    NetworkState &netState,
-                                    AsyncWebServer &captivePortal,
-                                    AsyncWebServer &controlPanel,
-                                    AsyncWebServer &api,
-                                    DNSServer &dnsServer);
+void handleModeTransitioning(WiFiMode &lastMode,
+                             NetworkState &netState,
+                             AsyncWebServer &captivePortal,
+                             AsyncWebServer &controlPanel,
+                             AsyncWebServer &api,
+                             DNSServer &dnsServer,
+                             AsyncWebSocket &webSocket);
 
-extern void toggleHandlers(ONOFF action,
-                           WiFiMode mode,
-                           AsyncWebServer &captivePortal,
-                           AsyncWebServer &controlPanel,
-                           AsyncWebServer &api,
-                           DNSServer &dnsServer,
-                           const IPAddress &localIp);
+void toggleHandlers(ONOFF action,
+                    WiFiMode mode,
+                    AsyncWebServer &captivePortal,
+                    AsyncWebServer &controlPanel,
+                    AsyncWebServer &api,
+                    DNSServer &dnsServer,
+                    AsyncWebSocket &ws,
+                    const IPAddress &localIp);
 
 extern void setUpDNSServer(DNSServer &server);
 extern void setUpAPIServer(AsyncWebServer &server);
 extern void setUpCaptivePortalServer(AsyncWebServer &server);
 extern void startSoftAccessPoint(const char *ssid, const char *password, const IPAddress &localIP, const IPAddress &gatewayIP, const IPAddress &subnetMask);
+extern void notifyClients(AsyncWebSocket &ws, String message);
+extern void handleWebSocket(AsyncWebSocket &ws);
+// extern void handleWebSocketMessage(AsyncWebSocket *ws, void *arg, uint8_t *data, size_t len);
+extern void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
 
 wl_status_t connect(String ssid, String password, u8_t tries, u16_t delay);
 extern wl_status_t disconnect(WiFiMode mode);

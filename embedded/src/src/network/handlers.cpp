@@ -17,37 +17,25 @@ void handleModeTransitioning(WiFiMode &lastMode,
                              AsyncWebServer &captivePortal,
                              AsyncWebServer &controlPanel,
                              AsyncWebServer &api,
-                             DNSServer &dnsServer)
+                             DNSServer &dnsServer,
+                             AsyncWebSocket &webSocket)
 {
-
-    WiFiMode currentMode = netState.getWiFiMode(); // The state access can be used directly during the code, but to avoid any kind of problem related as multitasking conflict during the execution, made it fixed here
+    WiFiMode currentMode = netState.getWiFiMode();
 
     switch (currentMode)
     {
-    case IDLE: /* if it goes to IDLE mode, turn all off */
-        toggleHandlers(off, lastMode, captivePortal, controlPanel, api, dnsServer, localIP);
-        api.end(); // Shared between the AP and STA modes
+    case IDLE: // Turn everything off
+        toggleHandlers(off, lastMode, captivePortal, controlPanel, api, dnsServer, webSocket, localIP);
+        api.end();
 
-        WiFi.mode(WIFI_OFF);        /* Turn WiFi off to reduce consumption and relief CPU resources */
-        netState.setWiFiState(OFF); /* Set the global state to off, just a convention to use it all over the code */
+        WiFi.mode(WIFI_OFF);
+        netState.setWiFiState(OFF);
         lastMode = IDLE;
         break;
 
-    default: /* If it's not to go to idle mode */
+    default:
+        toggleHandlers(off, lastMode, captivePortal, controlPanel, api, dnsServer, webSocket, localIP);
 
-        /**
-         * Turn off all servers that won't be used in the new mode
-         * if the code is reaching this point, it assumes that is
-         * already validated and will just switch between the remaining modes
-         * obs: the remaining modes share the api server
-         */
-        toggleHandlers(off, lastMode, captivePortal, controlPanel, api, dnsServer, localIP);
-
-        // Turn WiFi on
-        // if (WiFi.getMode() != WIFI_AP_STA)
-        //     WiFi.mode(WIFI_AP_STA);
-
-        // Disconnects from the last mode informed
         if (WiFi.getMode() != WIFI_OFF)
             disconnect(lastMode);
 
@@ -66,48 +54,46 @@ void handleModeTransitioning(WiFiMode &lastMode,
             break;
         }
 
-        // Toggle the handlers on
-        toggleHandlers(on, currentMode, captivePortal, controlPanel, api, dnsServer, localIP);
+        toggleHandlers(on, currentMode, captivePortal, controlPanel, api, dnsServer, webSocket, localIP);
 
         netState.setWiFiState(OPERATIONAL);
-        lastMode = (WiFiMode)currentMode; // Casting, trying not to pass direct memory reference that could mess it all
+        lastMode = currentMode;
         break;
     }
+}
+
+String gatherSystemData()
+{
+    DynamicJsonDocument jsonResponse(512);
+
+    jsonResponse["kp"] = APPLICATION_STATE.getKp();
+    jsonResponse["ki"] = APPLICATION_STATE.getKi();
+    jsonResponse["kd"] = APPLICATION_STATE.getKd();
+    jsonResponse["setpoint"] = APPLICATION_STATE.getSetpoint();
+    jsonResponse["bed_temp"] = APPLICATION_STATE.getBedTemperature();
+    jsonResponse["cpu_temp"] = APPLICATION_STATE.getCPUTemperature();
+    jsonResponse["heater_enabled"] = APPLICATION_STATE.getOutputState();
+
+    String serializedResponse;
+    serializeJson(jsonResponse, serializedResponse);
+
+    return serializedResponse;
 }
 
 void setUpAPIServer(AsyncWebServer &server)
 {
     ATTACHROUTE("/state/get", server, {
-        JsonDocument jsonResponse;
-
-        jsonResponse["kp"] = APPLICATION_STATE.getKp();
-        jsonResponse["ki"] = APPLICATION_STATE.getKi();
-        jsonResponse["kd"] = APPLICATION_STATE.getKd();
-        jsonResponse["setpoint"] = APPLICATION_STATE.getSetpoint();
-        jsonResponse["bed_temp"] = APPLICATION_STATE.getBedTemperature();
-        jsonResponse["cpu_temp"] = APPLICATION_STATE.getCPUTemperature();
-        jsonResponse["heater_enabled"] = APPLICATION_STATE.getOutputState();
-
-        String serializedResponse;
-        serializeJson(jsonResponse, serializedResponse);
-
-        request->send(200, "application/json", serializedResponse);
+        request->send(200, "application/json", gatherSystemData());
     });
 
     ATTACHROUTE("/state/set/setpoint", server, {
-        // if there's no setpoint key or is not float, return Bad request
         KEYVERIFICATION("setpoint", int);
-
-        // Saving to the application state, cast to double to prevent errors
         APPLICATION_STATE.setSetpoint(requestBody["setpoint"].as<double>());
-
         request->send(200);
     });
 
     ATTACHROUTE("/state/set/kp", server, {
-        // if there's no kp key or is not float, return Bad request
         KEYVERIFICATION("kp", float);
-
         double kp = requestBody["kp"].as<double>();
         APPLICATION_STATE.setKp(kp);
 
@@ -120,26 +106,22 @@ void setUpAPIServer(AsyncWebServer &server)
     });
 
     ATTACHROUTE("/state/set/ki", server, {
-        // if there's no ki key or is not float, return Bad request
         KEYVERIFICATION("ki", float);
-
         double ki = requestBody["ki"].as<double>();
-        APPLICATION_STATE.setKp(ki);
+        APPLICATION_STATE.setKi(ki);
 
         if (!requestBody["volatile"].as<bool>())
         {
-            queryDatabase(("UPDATE configs SET ki = " + String(ki, 6) + ";").c_str(), false);
+            queryDatabase(("UPDATE configs SET ki = " + String(ki, 3) + ";").c_str(), false);
         }
 
         request->send(200);
     });
 
     ATTACHROUTE("/state/set/kd", server, {
-        // if there's no kd key or is not float, return Bad request
         KEYVERIFICATION("kd", float);
-
         double kd = requestBody["kd"].as<double>();
-        APPLICATION_STATE.setKp(kd);
+        APPLICATION_STATE.setKd(kd);
 
         if (!requestBody["volatile"].as<bool>())
         {
@@ -149,15 +131,8 @@ void setUpAPIServer(AsyncWebServer &server)
         request->send(200);
     });
 
-    ATTACHROUTE("/state/heater", server, {
-        // if there's no heater_enabled key or is not bool, return Bad request
-        KEYVERIFICATION("heater_enable", float);
-
-        request->send(200);
-    });
-
     server.onNotFound([](AsyncWebServerRequest *request)
-                      { request->send(401); });
+                      { request->send(404); });
 }
 
 void setUpCaptivePortalServer(AsyncWebServer &server)
@@ -214,6 +189,7 @@ void toggleHandlers(ONOFF action,
                     AsyncWebServer &controlPanel,
                     AsyncWebServer &api,
                     DNSServer &dnsServer,
+                    AsyncWebSocket &ws,
                     const IPAddress &localIp)
 {
     if (action)
@@ -221,6 +197,8 @@ void toggleHandlers(ONOFF action,
         switch (mode)
         {
         case AP_MODE:
+            ws.onEvent(onEvent);
+            captivePortal.addHandler(&ws);
             captivePortal.begin();
             dnsServer.start(53, "*", localIp);
             break;
@@ -237,6 +215,7 @@ void toggleHandlers(ONOFF action,
         switch (mode)
         {
         case AP_MODE:
+            captivePortal.removeHandler(&ws);
             captivePortal.end();
             dnsServer.stop();
             break;
@@ -246,6 +225,48 @@ void toggleHandlers(ONOFF action,
             // --> UDP Listener server here <--
             break;
         }
+    }
+}
+
+void handleWebSocket(AsyncWebSocket &ws)
+{
+    notifyClients(ws, gatherSystemData());
+}
+
+void notifyClients(AsyncWebSocket &ws, String message)
+{
+    ws.textAll(message);
+}
+
+void handleWebSocketMessage(AsyncWebSocket &ws, void *arg, uint8_t *data, size_t len)
+{
+    AwsFrameInfo *info = (AwsFrameInfo *)arg;
+    if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT)
+    {
+        notifyClients(ws, "json");
+    }
+}
+
+void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len)
+{
+    switch (type)
+    {
+    case WS_EVT_CONNECT:
+        Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
+        break;
+
+    case WS_EVT_DISCONNECT:
+        Serial.printf("WebSocket client #%u disconnected\n", client->id());
+        break;
+
+    case WS_EVT_DATA:
+        // handleWebSocketMessage(arg, data, len);
+        // Serial.printf("Received data from client #%u\n", client->id());
+        break;
+
+    case WS_EVT_PONG:
+    case WS_EVT_ERROR:
+        break;
     }
 }
 
