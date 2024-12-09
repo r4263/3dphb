@@ -18,8 +18,12 @@ typedef struct GlobalState
     double kp = 0;
     double ki = 0;
     double kd = 0;
+    uint8_t lh = 0;
+    uint8_t hh = 0;
+    ControlModes control_mode;
     boolean updatedPIDTunnings = false;
     boolean updatedPIDSetpoint = false;
+    boolean updatedControlMode = false;
     boolean output_enable = false;
     boolean beep_enable = true;
     BeepLength beep_length = DURATION_NORMAL;
@@ -31,9 +35,6 @@ typedef struct GlobalState
     // Output PWM
     void setPWM(uint16_t pwm);
     uint16_t getPWM(void);
-
-    // void setFSState(boolean state);
-    // boolean isFsInitialized(void);
 
     // Beep Tone
     void setTone(BeepTone tone);
@@ -57,6 +58,18 @@ typedef struct GlobalState
     boolean hasPIDTunningChanged(void);
     boolean hasPIDSetpointChanged(void);
 
+    ControlModes getControlMode(void);
+    void setControlMode(ControlModes mode);
+    boolean hasControlmodeChanged(void);
+
+    // Upper hysteresis
+    void setUpperHysteresisValue(uint8_t hh);
+    uint8_t getUpperHysteresisValue(void);
+
+    // Lower hysteresis
+    void setLowerHysteresisValue(uint8_t lh);
+    uint8_t getLowerHysteresisValue(void);
+
     // PWM output enable flag
     void enableOutput();
     void disableOutput();
@@ -79,27 +92,3 @@ typedef struct GlobalState
 } GlobalState;
 
 #endif
-
-// Connection struct
-// typedef struct
-// {
-//     String SSID;
-//     String PASS;
-//     uint16_t MCASTPORT;
-//     uint16_t TCPPORT;
-//     IPAddress MCASTGROUP;
-//     String INTERNALSSID;
-//     String INTERNALPASS;
-//     uint32_t SCANINTERVAL;
-
-//     bool setSSID(String SSID);
-//     bool setPASS(String PWK);
-//     bool setMCASTPORT(uint16_t PORT);
-//     bool setTCPPORT(uint16_t PORT);
-//     bool setINTERNALSSID(String ISSID);
-//     bool setINTERNALPASS(String IPASS);
-//     bool setMCASTGROUP(String GROUP);
-//     bool setSCANINTERVAL(uint32_t INTERVAL);
-//     void setArgs(JsonObject Args);
-//     String mountObject();
-// } Connection;

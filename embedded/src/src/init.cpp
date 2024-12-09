@@ -24,7 +24,10 @@ void initApplicationVitals(void)
     APPLICATION_STATE.setKp(storedData[0]["kp"].as<double>());
     APPLICATION_STATE.setKi(storedData[0]["ki"].as<double>());
     APPLICATION_STATE.setKd(storedData[0]["kd"].as<double>());
+    APPLICATION_STATE.setUpperHysteresisValue(storedData[0]["hh"].as<uint8_t>());
+    APPLICATION_STATE.setLowerHysteresisValue(storedData[0]["lh"].as<uint8_t>());
     APPLICATION_STATE.setSetpoint(storedData[0]["setpoint"].as<double>());
+    APPLICATION_STATE.setControlMode(storedData[0]["control_mode"].as<ControlModes>());
 
     // Freeing the used memory
     storedData.clear();

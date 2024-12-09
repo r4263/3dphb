@@ -9,6 +9,7 @@
 #include <src/data/macros.h>
 #include <src/network/request_middleware.h>
 #include <src/data/database.h>
+#include <src/data/queries/defaults.h>
 
 #define filesystem APPLICATION_STATE.filesystem
 #define noBodyRequestHandler [](AsyncWebServerRequest *request) { request->send(401); }

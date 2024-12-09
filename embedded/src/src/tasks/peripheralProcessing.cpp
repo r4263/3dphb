@@ -1,61 +1,99 @@
 #include <src/tasks/peripheralProcessing.h>
 
-// PID pid(bed_temp, output_pwm, setpoint, kp, ki, kd, DIRECT);
+double Setpoint, Input, Output, lastOutput, kp, ki, kd;
+ControlModes currentMode;
+bool lastOutputState, outputState;
+
+PID tControl(&Input, &Output, &Setpoint, kp, ki, kd, DIRECT);
 
 void peripheralProcessing(void *pvParameters)
 {
-    // pid.SetMode(AUTOMATIC);
-    // pid.SetOutputLimits(0, 1023);
-
-    // pinMode(NTC_PIN, INPUT);
-    // pinMode(PWR, OUTPUT);
+    tControl.SetMode(APPLICATION_STATE.getControlMode() == ControlModes::pid ? AUTOMATIC : MANUAL);
+    tControl.SetOutputLimits(0, 1023);       // 10 bits output resolution
+    tControl.SetSampleTime(PID_SAMPLE_TIME); // sample time
+    updatePIDTunnings();
 
     while (true)
     {
-        vTaskDelay(pdMS_TO_TICKS(100));
+        currentMode = APPLICATION_STATE.getControlMode();
+        outputState = APPLICATION_STATE.getOutputState();
 
-        // if (xSemaphoreTake(globalStateMutex, portMAX_DELAY))
-        // {
-        //     refreshCPUTemperature(&STATE);
-        //     refreshBedTemperature(&STATE);
-        //     xSemaphoreGive(globalStateMutex);
-        // }
+        Input = getBedTemperature();
+        APPLICATION_STATE.setBedTemperature(Input);
 
-        // if (STATE.output_enable)
-        // {
-        //     calculatePID();
+        APPLICATION_STATE.setCPUTemperature((double)temperatureRead());
 
-        //     if (!digitalRead(PWR))
-        //     {
-        //         digitalWrite(PWR, HIGH);
-        //         vTaskDelay(pdMS_TO_TICKS(1000));
-        //         ledcWrite(1, STATE.output_pwm);
-        //     }
-        // }
-        // else
-        // {
-        //     ledcWrite(1, 0);
+        // Handle pid keys changes
+        if (APPLICATION_STATE.hasPIDTunningChanged())
+            updatePIDTunnings();
 
-        //     if (xSemaphoreTake(globalStateMutex, portMAX_DELAY))
-        //     {
-        //         STATE.output_pwm = 0;
-        //         xSemaphoreGive(globalStateMutex);
-        //     }
+        // Handle setpoint changes
+        if (APPLICATION_STATE.hasPIDSetpointChanged())
+            Setpoint = APPLICATION_STATE.getSetpoint();
 
-        //     if (digitalRead(PWR))
-        //         digitalWrite(PWR, LOW);
-        // }
+        // Handle control mode changes
+        if (APPLICATION_STATE.hasControlmodeChanged())
+            tControl.SetMode(currentMode == ControlModes::pid ? AUTOMATIC : MANUAL);
 
-        // Serial.println(STATE.output_pwm);
+        if (outputState) // if the output is enabled
+        {
+            switch (currentMode)
+            {
+            case ControlModes::pid:
+                if (tControl.Compute())
+                {
+                    digitalWrite(PWR, HIGH);
+
+                    if (lastOutputState != outputState) // if the state changed, delay the pwm ramping up by 1 second
+                        vTaskDelay(pdMS_TO_TICKS(1000));
+
+                    ledcWrite(HEATER_CHANNEL, (uint32_t)Output);
+                }
+                break;
+
+            case ControlModes::hysteresis:
+                if (Input > Setpoint + APPLICATION_STATE.getUpperHysteresisValue())
+                    ledcWrite(HEATER_CHANNEL, 0);
+                if (Input < Setpoint - APPLICATION_STATE.getLowerHysteresisValue())
+                    ledcWrite(HEATER_CHANNEL, 1023);
+                break;
+            }
+        }
+        else
+        {
+            ledcWrite(HEATER_CHANNEL, 0);
+            APPLICATION_STATE.setPWM(0);
+
+            vTaskDelay(pdMS_TO_TICKS(200));
+
+            if (digitalRead(PWR))
+                digitalWrite(PWR, LOW);
+        }
+
+        if (lastOutputState != outputState)
+            lastOutputState = outputState;
+
+        // handle feeding the application state the output changes
+        if (Output != lastOutput)
+        {
+            APPLICATION_STATE.setPWM(Output);
+            lastOutput = Output;
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(ITERATION_DELAY));
     }
 }
 
-void refreshCPUTemperature(GlobalState *state)
+void updatePIDTunnings(void)
 {
-    // state->setCPUTemperature(temperatureRead());
+    kp = APPLICATION_STATE.getKp();
+    ki = APPLICATION_STATE.getKi();
+    kd = APPLICATION_STATE.getKd();
+
+    tControl.SetTunings(kp, ki, kd);
 }
 
-void refreshBedTemperature(GlobalState *state)
+double getBedTemperature(void)
 {
     double Vs = 3.3;
     double To = 298.15;
@@ -71,10 +109,5 @@ void refreshBedTemperature(GlobalState *state)
     T = 1 / (1 / To + log(Rt / Ro) / BETA);
     Tc = T - 273.15;
 
-    // state->setBedTemperature(Tc);
-}
-
-void calculatePID(void)
-{
-    // pid.Compute();
+    return Tc;
 }

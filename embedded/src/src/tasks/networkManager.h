@@ -15,7 +15,7 @@
 #include <src/data/filetools.h>
 
 #define filesystem APPLICATION_STATE.filesystem
-#define WEBSOCKET_REFRESH_RATE 3000 // 3s websocket refresh rate
+#define WEBSOCKET_REFRESH_RATE 500 // 3s websocket refresh rate
 
 extern void networkManager(void *pvParameters);
 // extern void ap();

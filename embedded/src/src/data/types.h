@@ -50,4 +50,10 @@ enum ONOFF
     on
 };
 
+enum ControlModes
+{
+    hysteresis,
+    pid
+};
+
 #endif

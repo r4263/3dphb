@@ -5,7 +5,10 @@ const char *createConfigTableQuery = R"(
     kp FLOAT,
     ki FLOAT,
     kd FLOAT,
+    hh INTEGER,
+    lh INTEGER,
     setpoint INTEGER,
+    control_mode INTEGER,
     beep_tone INTEGER,
     beep_duration INTEGER,
     wifi_state INTEGER,
@@ -19,10 +22,7 @@ const char *createConfigTableQuery = R"(
   )";
 
 const char *insertDefaultData = R"(
-  INSERT INTO configs (
-    kp, ki, kd, setpoint, beep_tone, beep_duration, wifi_state, wifi_mode, wifi_scan_interval,
-    network_ssid, network_password, multicast_group, multicast_port
-  ) VALUES (0.0, 0.0, 0.0, 0, 440, 50, 0, 0, 60, '', '', '', 0);
+  INSERT INTO configs (kp, ki, kd, hh, lh, setpoint, control_mode, beep_tone, beep_duration, wifi_state, wifi_mode, wifi_scan_interval, network_ssid, network_password, multicast_group, multicast_port) VALUES (1.0, 1.0, 1.0, 3, 3, 30, 1, 440, 50, 0, 0, 60, '', '', '', 0);
 )";
 
 const char *selectAllConfigsQuery = R"(

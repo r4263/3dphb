@@ -12,7 +12,7 @@ void networkScanner(void *pvParameters)
     // {
     //     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(30000));
 
-    DynamicJsonDocument doc(1024);
+    JsonDocument doc;
 
     JsonArray array = doc.to<JsonArray>();
 

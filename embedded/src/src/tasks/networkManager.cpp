@@ -28,12 +28,9 @@ void networkManager(void *pvParameters)
   NETWORK_STATE.setWiFiMode(AP_MODE);
 
   /* Default headers */
-  DefaultHeaders::Instance()
-      .addHeader("Access-Control-Allow-Origin", "*");
-  DefaultHeaders::Instance()
-      .addHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
-  DefaultHeaders::Instance()
-      .addHeader("Access-Control-Allow-Headers", "Content-Type");
+  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
+  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   while (true)
   {

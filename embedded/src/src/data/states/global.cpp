@@ -2,6 +2,37 @@
 
 // Getters and setters
 
+ControlModes GlobalState::getControlMode(void)
+{
+    ControlModes mode;
+    SEMAPHORE_WRAPPER(globalStateMutex, {
+        mode = this->control_mode;
+    });
+
+    return mode;
+}
+
+void GlobalState::setControlMode(ControlModes mode)
+{
+    SEMAPHORE_WRAPPER(globalStateMutex, {
+        this->control_mode = mode;
+        this->updatedControlMode = true;
+    });
+}
+
+boolean GlobalState::hasControlmodeChanged(void)
+{
+    bool isUpdated;
+    SEMAPHORE_WRAPPER(globalStateMutex, {
+        isUpdated = this->updatedControlMode;
+
+        if (isUpdated)
+            this->updatedControlMode = false;
+    });
+
+    return isUpdated;
+}
+
 // Output PWM
 void GlobalState::setPWM(uint16_t pwm)
 {
@@ -75,6 +106,7 @@ void GlobalState::setSetpoint(double setpoint)
 {
     SEMAPHORE_WRAPPER(globalStateMutex, {
         this->setpoint = setpoint;
+        this->updatedPIDSetpoint = true;
     });
 };
 
@@ -177,6 +209,42 @@ boolean GlobalState::hasPIDSetpointChanged(void) // Update listener, when read i
 
     return isUpdated;
 };
+
+// Upper hysteresis
+void GlobalState::setUpperHysteresisValue(uint8_t hh)
+{
+    SEMAPHORE_WRAPPER(globalStateMutex, {
+        this->hh = hh;
+    });
+}
+
+uint8_t GlobalState::getUpperHysteresisValue(void)
+{
+    uint8_t hh;
+    SEMAPHORE_WRAPPER(globalStateMutex, {
+        hh = this->hh;
+    });
+
+    return hh;
+}
+
+// Lower hysteresis
+void GlobalState::setLowerHysteresisValue(uint8_t lh)
+{
+    SEMAPHORE_WRAPPER(globalStateMutex, {
+        this->lh = lh;
+    });
+}
+
+uint8_t GlobalState::getLowerHysteresisValue(void)
+{
+    uint8_t lh;
+    SEMAPHORE_WRAPPER(globalStateMutex, {
+        lh = this->lh;
+    });
+
+    return lh;
+}
 
 // PWM output enable flag
 void GlobalState::enableOutput()
@@ -337,7 +405,7 @@ boolean GlobalState::getBeeperState()
 
 // String Connection::mountObject()
 // {
-//     DynamicJsonDocument doc(1024);
+//     JsonDocument doc;
 //     String returningString;
 
 //     JsonObject network = doc.createNestedObject("NETWORK");

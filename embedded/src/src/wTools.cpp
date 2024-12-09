@@ -41,7 +41,7 @@ String getNearbyNetworks()
     String content;
     uint16_t networkCount = WiFi.scanNetworks(false, true);
 
-    DynamicJsonDocument doc(2048);
+    JsonDocument doc;
 
     JsonArray array = doc.to<JsonArray>();
 

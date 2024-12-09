@@ -64,7 +64,7 @@ void handleModeTransitioning(WiFiMode &lastMode,
 
 String gatherSystemData()
 {
-    DynamicJsonDocument jsonResponse(512);
+    JsonDocument jsonResponse;
 
     jsonResponse["kp"] = APPLICATION_STATE.getKp();
     jsonResponse["ki"] = APPLICATION_STATE.getKi();
@@ -73,6 +73,9 @@ String gatherSystemData()
     jsonResponse["bed_temp"] = APPLICATION_STATE.getBedTemperature();
     jsonResponse["cpu_temp"] = APPLICATION_STATE.getCPUTemperature();
     jsonResponse["heater_enabled"] = APPLICATION_STATE.getOutputState();
+    jsonResponse["control_mode"] = APPLICATION_STATE.getControlMode();
+    jsonResponse["lh"] = APPLICATION_STATE.getLowerHysteresisValue();
+    jsonResponse["hh"] = APPLICATION_STATE.getUpperHysteresisValue();
 
     String serializedResponse;
     serializeJson(jsonResponse, serializedResponse);
@@ -82,13 +85,57 @@ String gatherSystemData()
 
 void setUpAPIServer(AsyncWebServer &server)
 {
+    server.on("*", HTTP_OPTIONS, [](AsyncWebServerRequest *request)
+              { request->send(204); }); //
+
     ATTACHROUTE("/state/get", server, {
         request->send(200, "application/json", gatherSystemData());
     });
 
     ATTACHROUTE("/state/set/setpoint", server, {
         KEYVERIFICATION("setpoint", int);
-        APPLICATION_STATE.setSetpoint(requestBody["setpoint"].as<double>());
+        double sp = requestBody["setpoint"].as<double>();
+
+        APPLICATION_STATE.setSetpoint(sp);
+
+        updateDatabase("setpoint", String(sp));
+        // queryDatabase(("UPDATE configs SET setpoint = " + String(sp) + ";").c_str(), false);
+
+        request->send(200);
+    });
+
+    ATTACHROUTE("/state/set/control", server, {
+        KEYVERIFICATION("mode", float);
+        uint8_t mode = requestBody["mode"].as<uint8_t>();
+        APPLICATION_STATE.setControlMode((ControlModes)mode);
+
+        updateDatabase("control_mode", String(mode));
+        // queryDatabase(("UPDATE configs SET control_mode = " + String(mode) + ";").c_str(), false);
+
+        request->send(200);
+    });
+
+    ATTACHROUTE("/state/set/hh", server, {
+        KEYVERIFICATION("hh", int);
+        uint8_t hh = requestBody["hh"].as<uint8_t>();
+
+        APPLICATION_STATE.setUpperHysteresisValue(hh);
+
+        updateDatabase("hh", String(hh));
+        // queryDatabase(("UPDATE configs SET hh = " + String(hh) + ";").c_str(), false);
+
+        request->send(200);
+    });
+
+    ATTACHROUTE("/state/set/lh", server, {
+        KEYVERIFICATION("lh", int);
+        uint8_t lh = requestBody["lh"].as<uint8_t>();
+
+        APPLICATION_STATE.setLowerHysteresisValue(lh);
+
+        updateDatabase("lh", String(lh));
+        // queryDatabase(("UPDATE configs SET lh = " + String(lh) + ";").c_str(), false);
+
         request->send(200);
     });
 
@@ -99,7 +146,8 @@ void setUpAPIServer(AsyncWebServer &server)
 
         if (!requestBody["volatile"].as<bool>())
         {
-            queryDatabase(("UPDATE configs SET kp = " + String(kp, 3) + ";").c_str(), false);
+            updateDatabase("kp", String(kp));
+            // queryDatabase(("UPDATE configs SET kp = " + String(kp, 3) + ";").c_str(), false);
         }
 
         request->send(200);
@@ -112,7 +160,8 @@ void setUpAPIServer(AsyncWebServer &server)
 
         if (!requestBody["volatile"].as<bool>())
         {
-            queryDatabase(("UPDATE configs SET ki = " + String(ki, 3) + ";").c_str(), false);
+            updateDatabase("ki", String(ki));
+            // queryDatabase(("UPDATE configs SET ki = " + String(ki, 3) + ";").c_str(), false);
         }
 
         request->send(200);
@@ -125,14 +174,29 @@ void setUpAPIServer(AsyncWebServer &server)
 
         if (!requestBody["volatile"].as<bool>())
         {
-            queryDatabase(("UPDATE configs SET kd = " + String(kd, 3) + ";").c_str(), false);
+            updateDatabase("kd", String(kd));
+            // queryDatabase(("UPDATE configs SET kd = " + String(kd, 3) + ";").c_str(), false);
         }
 
         request->send(200);
     });
 
+    ATTACHROUTE("/state/set/heater", server, {
+        KEYVERIFICATION("heater_enable", bool);
+        bool he = requestBody["heater_enable"].as<bool>();
+
+        he ? APPLICATION_STATE.enableOutput() : APPLICATION_STATE.disableOutput();
+
+        request->send(200);
+    });
+
     server.onNotFound([](AsyncWebServerRequest *request)
-                      { request->send(404); });
+                      { 
+        if (request->method() == HTTP_OPTIONS) {
+            request->send(204); // Handling CORS preflight, Cross Platform API consuming
+        } else {
+            request->send(401);
+        } });
 }
 
 void setUpCaptivePortalServer(AsyncWebServer &server)
@@ -170,8 +234,10 @@ void setUpCaptivePortalServer(AsyncWebServer &server)
     server.on("/favicon.ico", [](AsyncWebServerRequest *request)
               { request->send(404); }); // webpage icon
 
-    server.serveStatic("/", filesystem, "/web/portal/").setDefaultFile("index.html");
-    server.serveStatic("/static/", filesystem, "/web/portal/static");
+    server.serveStatic("/", filesystem, "/web/panel/").setDefaultFile("index.html");
+    server.serveStatic("/static/", filesystem, "/web/panel/static");
+    // server.serveStatic("/", filesystem, "/web/portal/").setDefaultFile("index.html");
+    // server.serveStatic("/static/", filesystem, "/web/portal/static");
 
     server.onNotFound([](AsyncWebServerRequest *request)
                       { request->redirect(localIPURL); });
