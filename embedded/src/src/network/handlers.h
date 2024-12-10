@@ -10,6 +10,7 @@
 #include <src/network/request_middleware.h>
 #include <src/data/database.h>
 #include <src/data/queries/defaults.h>
+#include <map>
 
 #define filesystem APPLICATION_STATE.filesystem
 #define noBodyRequestHandler [](AsyncWebServerRequest *request) { request->send(401); }
@@ -65,6 +66,7 @@ void toggleHandlers(ONOFF action,
                     AsyncWebSocket &ws,
                     const IPAddress &localIp);
 
+extern String gatherUpdatedData(void);
 extern void setUpDNSServer(DNSServer &server);
 extern void setUpAPIServer(AsyncWebServer &server);
 extern void setUpCaptivePortalServer(AsyncWebServer &server);

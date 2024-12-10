@@ -9,6 +9,8 @@ const String localIPURL = "http://" + localIP.toString();
 const char *ssid = "phb-ctrl";
 const char *password = NULL;
 
+std::map<String, double> previousState;
+
 /**
  * Handler to transition states between wifi modes
  */
@@ -62,6 +64,92 @@ void handleModeTransitioning(WiFiMode &lastMode,
     }
 }
 
+String gatherUpdatedData(void)
+{
+    JsonDocument jsonResponse;
+    bool hasUpdates = false;
+
+    if (APPLICATION_STATE.getKp() != previousState["kp"])
+    {
+        jsonResponse["kp"] = APPLICATION_STATE.getKp();
+        previousState["kp"] = APPLICATION_STATE.getKp();
+        hasUpdates = true;
+    }
+
+    if (APPLICATION_STATE.getKi() != previousState["ki"])
+    {
+        jsonResponse["ki"] = APPLICATION_STATE.getKi();
+        previousState["ki"] = APPLICATION_STATE.getKi();
+        hasUpdates = true;
+    }
+
+    if (APPLICATION_STATE.getKd() != previousState["kd"])
+    {
+        jsonResponse["kd"] = APPLICATION_STATE.getKd();
+        previousState["kd"] = APPLICATION_STATE.getKd();
+        hasUpdates = true;
+    }
+
+    if (APPLICATION_STATE.getSetpoint() != previousState["setpoint"])
+    {
+        jsonResponse["setpoint"] = APPLICATION_STATE.getSetpoint();
+        previousState["setpoint"] = APPLICATION_STATE.getSetpoint();
+        hasUpdates = true;
+    }
+
+    if (APPLICATION_STATE.getBedTemperature() != previousState["bed_temp"])
+    {
+        jsonResponse["bed_temp"] = APPLICATION_STATE.getBedTemperature();
+        previousState["bed_temp"] = APPLICATION_STATE.getBedTemperature();
+        hasUpdates = true;
+    }
+
+    if (APPLICATION_STATE.getCPUTemperature() != previousState["cpu_temp"])
+    {
+        jsonResponse["cpu_temp"] = APPLICATION_STATE.getCPUTemperature();
+        previousState["cpu_temp"] = APPLICATION_STATE.getCPUTemperature();
+        hasUpdates = true;
+    }
+
+    if (APPLICATION_STATE.getControlMode() != previousState["control_mode"])
+    {
+        jsonResponse["control_mode"] = APPLICATION_STATE.getControlMode();
+        previousState["control_mode"] = APPLICATION_STATE.getControlMode();
+        hasUpdates = true;
+    }
+
+    if (APPLICATION_STATE.getOutputState() != previousState["heater_enabled"])
+    {
+        jsonResponse["heater_enabled"] = APPLICATION_STATE.getOutputState();
+        previousState["heater_enabled"] = APPLICATION_STATE.getOutputState();
+        hasUpdates = true;
+    }
+
+    if (APPLICATION_STATE.getLowerHysteresisValue() != previousState["lh"])
+    {
+        jsonResponse["lh"] = APPLICATION_STATE.getLowerHysteresisValue();
+        previousState["lh"] = APPLICATION_STATE.getLowerHysteresisValue();
+        hasUpdates = true;
+    }
+
+    if (APPLICATION_STATE.getUpperHysteresisValue() != previousState["hh"])
+    {
+        jsonResponse["hh"] = APPLICATION_STATE.getUpperHysteresisValue();
+        previousState["hh"] = APPLICATION_STATE.getUpperHysteresisValue();
+        hasUpdates = true;
+    }
+
+    if (!hasUpdates)
+    {
+        return "";
+    }
+
+    String serializedResponse;
+    serializeJson(jsonResponse, serializedResponse);
+
+    return serializedResponse;
+}
+
 String gatherSystemData()
 {
     JsonDocument jsonResponse;
@@ -99,7 +187,6 @@ void setUpAPIServer(AsyncWebServer &server)
         APPLICATION_STATE.setSetpoint(sp);
 
         updateDatabase("setpoint", String(sp));
-        // queryDatabase(("UPDATE configs SET setpoint = " + String(sp) + ";").c_str(), false);
 
         request->send(200);
     });
@@ -110,7 +197,6 @@ void setUpAPIServer(AsyncWebServer &server)
         APPLICATION_STATE.setControlMode((ControlModes)mode);
 
         updateDatabase("control_mode", String(mode));
-        // queryDatabase(("UPDATE configs SET control_mode = " + String(mode) + ";").c_str(), false);
 
         request->send(200);
     });
@@ -122,7 +208,6 @@ void setUpAPIServer(AsyncWebServer &server)
         APPLICATION_STATE.setUpperHysteresisValue(hh);
 
         updateDatabase("hh", String(hh));
-        // queryDatabase(("UPDATE configs SET hh = " + String(hh) + ";").c_str(), false);
 
         request->send(200);
     });
@@ -134,7 +219,6 @@ void setUpAPIServer(AsyncWebServer &server)
         APPLICATION_STATE.setLowerHysteresisValue(lh);
 
         updateDatabase("lh", String(lh));
-        // queryDatabase(("UPDATE configs SET lh = " + String(lh) + ";").c_str(), false);
 
         request->send(200);
     });
@@ -147,7 +231,6 @@ void setUpAPIServer(AsyncWebServer &server)
         if (!requestBody["volatile"].as<bool>())
         {
             updateDatabase("kp", String(kp));
-            // queryDatabase(("UPDATE configs SET kp = " + String(kp, 3) + ";").c_str(), false);
         }
 
         request->send(200);
@@ -161,7 +244,6 @@ void setUpAPIServer(AsyncWebServer &server)
         if (!requestBody["volatile"].as<bool>())
         {
             updateDatabase("ki", String(ki));
-            // queryDatabase(("UPDATE configs SET ki = " + String(ki, 3) + ";").c_str(), false);
         }
 
         request->send(200);
@@ -175,7 +257,6 @@ void setUpAPIServer(AsyncWebServer &server)
         if (!requestBody["volatile"].as<bool>())
         {
             updateDatabase("kd", String(kd));
-            // queryDatabase(("UPDATE configs SET kd = " + String(kd, 3) + ";").c_str(), false);
         }
 
         request->send(200);
@@ -296,7 +377,12 @@ void toggleHandlers(ONOFF action,
 
 void handleWebSocket(AsyncWebSocket &ws)
 {
-    notifyClients(ws, gatherSystemData());
+    String updatedData = gatherUpdatedData();
+
+    if (!updatedData.isEmpty())
+    {
+        notifyClients(ws, updatedData);
+    }
 }
 
 void notifyClients(AsyncWebSocket &ws, String message)
@@ -318,6 +404,7 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
     switch (type)
     {
     case WS_EVT_CONNECT:
+        client->text(gatherSystemData());
         Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
         break;
 
