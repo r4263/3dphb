@@ -6,20 +6,24 @@ void beeper(void *pvParameters)
     {
         xTaskNotifyWait(0x00, 0xFFFFFFFF, (uint32_t *)&beeperNotificationValue, portMAX_DELAY);
 
+        uint16_t currentFreq = ledcReadFreq(BUZZER_CHANNEL);
+        uint16_t desiredFreq = APPLICATION_STATE.getTone();
+
         if (beeperNotificationValue)
         {
-            ledcSetup(2, 440, 10);
-            ledcWrite(2, 512);
+            if (currentFreq != desiredFreq)
+                ledcSetup(BUZZER_CHANNEL, desiredFreq, 10);
+            ledcWrite(BUZZER_CHANNEL, turn_on);
             vTaskDelay(pdMS_TO_TICKS(500));
-            ledcWrite(2, 0);
+            ledcWrite(BUZZER_CHANNEL, turn_off);
         }
-        else
-        {
-            ledcSetup(2, 1200, 10);
-            ledcWrite(2, 512);
-            vTaskDelay(pdMS_TO_TICKS(500));
-            ledcWrite(2, 0);
-        }
+        // else
+        // {
+        //     ledcSetup(BUZZER_CHANNEL, 1200, 10);
+        //     ledcWrite(2, 512);
+        //     vTaskDelay(pdMS_TO_TICKS(500));
+        //     ledcWrite(2, 0);
+        // }
         // xTaskNotify(beeperHandle, BEEP, eSetValueWithOverwrite); // -> usage as beep
         // xTaskNotify(beeperHandle, TEST, eSetValueWithOverwrite); // -> usage as a test
     }

@@ -12,6 +12,12 @@ enum BeepLength
     DURATION_LONG = 100
 };
 
+enum BeepStates
+{
+    turn_on = 512,
+    turn_off = 0
+};
+
 // Beep frequency control enum
 enum BeepTone
 {

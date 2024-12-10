@@ -167,7 +167,7 @@ export default function ControlPanel() {
         } else {
             pushNotification({ message: "Nenhuma modificação nos valores!", level: "info" });
         }
-    }, [onError, pushNotification, kp, ki, kd]);
+    }, [onError, pushNotification, kp, ki, kd, kpBackup, kiBackup, kdBackup]);
 
     const handleHysteresisChanges = useCallback(() => {
         const requestQueue: Array<() => Promise<any>> = [];
@@ -208,7 +208,7 @@ export default function ControlPanel() {
         } else {
             pushNotification({ message: "Nenhuma modificação nos valores!", level: "info" });
         }
-    }, [onError, pushNotification, kp, ki, kd]);
+    }, [onError, pushNotification, hh, lh, hHysteresisBackup, lHysteresisBackup]);
 
 
     return (
@@ -352,7 +352,7 @@ export default function ControlPanel() {
                                         step="0.001"
                                     />
                                 </div>
-                                <Button onClick={() => handlePIDChanges(true)} className="w-full bg-black text-white hover:bg-gray-800">Testar</Button>
+                                {/* <Button onClick={() => handlePIDChanges(true)} className="w-full bg-black text-white hover:bg-gray-800">Testar</Button> */}
                                 <Button onClick={() => handlePIDChanges(false)} className="w-full bg-black text-white hover:bg-gray-800">Aplicar alterações</Button>
                             </Tabs.Content>
                             <Tabs.Content value="hysteresis" className="space-y-4">

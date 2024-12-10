@@ -2,6 +2,7 @@
 
 GlobalState APPLICATION_STATE;
 NetworkState NETWORK_STATE;
+GlobalActions DEVICE;
 
 boolean initializeMutexes(void)
 {

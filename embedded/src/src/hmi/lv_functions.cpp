@@ -11,14 +11,15 @@
 
 void ui_refresh_func(lv_timer_t *timer)
 {
-    // lv_label_set_text_fmt(ui_cpuTempLabel, "CPU: %d°C", (int32_t)STATE.cpu_temp);
-    // lv_label_set_text_fmt(ui_temperatureMeterLabel, "%.1f°C", STATE.bed_temp);
-    // lv_bar_set_value(ui_meterBar, STATE.bed_temp, LV_ANIM_ON);
+    float bedTemp = (float)APPLICATION_STATE.getBedTemperature();
+    lv_label_set_text_fmt(ui_cpuTempLabel, "CPU: %d°C", (int32_t)APPLICATION_STATE.getCPUTemperature());
+    lv_label_set_text_fmt(ui_temperatureMeterLabel, "%.1f°C", bedTemp);
+    lv_bar_set_value(ui_meterBar, bedTemp, LV_ANIM_ON);
 }
 
 void init_btn_event_cb(lv_event_t *e)
 {
-    // STATE.beep();
+    DEVICE.beep(BEEP);
     lv_obj_add_flag(ui_connectivityContentContainer, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(ui_displayContentContainer, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(ui_sonorityContentContainer, LV_OBJ_FLAG_HIDDEN);
@@ -28,7 +29,7 @@ void init_btn_event_cb(lv_event_t *e)
 
 void conn_btn_event_cb(lv_event_t *e)
 {
-    // STATE.beep();
+    DEVICE.beep(BEEP);
     lv_obj_add_flag(ui_initContentContainer, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(ui_displayContentContainer, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(ui_sonorityContentContainer, LV_OBJ_FLAG_HIDDEN);
@@ -38,7 +39,7 @@ void conn_btn_event_cb(lv_event_t *e)
 
 void display_btn_event_cb(lv_event_t *e)
 {
-    // STATE.beep();
+    DEVICE.beep(BEEP);
     lv_obj_add_flag(ui_initContentContainer, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(ui_connectivityContentContainer, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(ui_sonorityContentContainer, LV_OBJ_FLAG_HIDDEN);
@@ -48,7 +49,7 @@ void display_btn_event_cb(lv_event_t *e)
 
 void sonority_btn_event_cb(lv_event_t *e)
 {
-    // STATE.beep();
+    DEVICE.beep(BEEP);
     lv_obj_add_flag(ui_initContentContainer, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(ui_connectivityContentContainer, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(ui_displayContentContainer, LV_OBJ_FLAG_HIDDEN);
@@ -58,7 +59,7 @@ void sonority_btn_event_cb(lv_event_t *e)
 
 void about_btn_event_cb(lv_event_t *e)
 {
-    // STATE.beep();
+    DEVICE.beep(BEEP);
     lv_obj_add_flag(ui_initContentContainer, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(ui_connectivityContentContainer, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(ui_displayContentContainer, LV_OBJ_FLAG_HIDDEN);
@@ -74,7 +75,7 @@ void slider_handler_event_cb(lv_event_t *e)
 
 void ui_event_enableWiFi(lv_event_t *e)
 {
-    // STATE.beep();
+    DEVICE.beep(BEEP);
 
     lv_obj_t *target = (lv_obj_t *)lv_event_get_target(e);
 
@@ -102,7 +103,7 @@ void ui_event_enableWiFi(lv_event_t *e)
 
 void ui_event_enableHeater(lv_event_t *e)
 {
-    // STATE.beep();
+    DEVICE.beep(BEEP);
 
     lv_obj_t *target = (lv_obj_t *)lv_event_get_target(e);
 
@@ -146,61 +147,61 @@ void ui_event_enableHeater(lv_event_t *e)
 
 void bass_tone_btn_event_cb(lv_event_t *e)
 {
-    // STATE.beep();
+    DEVICE.beep(BEEP);
     // STATE.setTone(TONE_BASS);
     // setToneButtonBehaviour();
 }
 
 void medium_tone_btn_event_cb(lv_event_t *e)
 {
-    // STATE.beep();
+    DEVICE.beep(BEEP);
     // STATE.setTone(TONE_MEDIUM);
     // setToneButtonBehaviour();
 }
 
 void high_tone_btn_event_cb(lv_event_t *e)
 {
-    // STATE.beep();
+    DEVICE.beep(BEEP);
     // STATE.setTone(TONE_HIGH);
     // setToneButtonBehaviour();
 }
 
 void short_duration_btn_event_cb(lv_event_t *e)
 {
-    // STATE.beep();
+    DEVICE.beep(BEEP);
     // STATE.setDuration(DURATION_SHORT);
     // setDurationButtonBehaviour();
 }
 
 void normal_duration_btn_event_cb(lv_event_t *e)
 {
-    // STATE.beep();
+    DEVICE.beep(BEEP);
     // STATE.setDuration(DURATION_NORMAL);
     // setDurationButtonBehaviour();
 }
 
 void medium_duration_btn_event_cb(lv_event_t *e)
 {
-    // STATE.beep();
+    DEVICE.beep(BEEP);
     // STATE.setDuration(DURATION_MEDIUM);
     // setDurationButtonBehaviour();
 }
 
 void long_duration_btn_event_cb(lv_event_t *e)
 {
-    // STATE.beep();
+    DEVICE.beep(BEEP);
     // STATE.setDuration(DURATION_LONG);
     // setDurationButtonBehaviour();
 }
 
 void test_tone_btn_event_cb(lv_event_t *e)
 {
-    // STATE.testBeep();
+    DEVICE.beep(TEST);
 }
 
 void apply_tone_btn_event_cb(lv_event_t *e)
 {
-    // STATE.beep();
+    DEVICE.beep(BEEP);
 
     int duration, frequency;
     // if (STATE.button_sonority_duration_short)
