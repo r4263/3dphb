@@ -29,16 +29,25 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         }
     };
 
+    const getNotificationHeaderText = (level: NotificationLevel) => {
+        switch (level) {
+            case "error": return "Erro"
+            case "success": return "Sucesso"
+            case "info": return "Informação"
+            case "warning": return "Aviso"
+        }
+    }
+
     return (
         <NotificationContext.Provider value={{ pushNotification }}>
             {children}
-            <div className="fixed bottom-4 right-4 space-y-2">
+            <div style={{ width: '400px' }} className="fixed bottom-4 right-4 space-y-2">
                 {notifications.map((notif) => (
                     <div
                         key={notif.id}
                         className={`px-4 py-2 rounded shadow-lg transition-opacity ${getNotificationStyle(notif.level)}`}
                     >
-                        <strong className="block capitalize">{notif.level}</strong>
+                        <strong className="block capitalize">{getNotificationHeaderText(notif.level)}</strong>
                         <span>{notif.message}</span>
                     </div>
                 ))}

@@ -9,12 +9,10 @@ import { ControlModes, DeviceState, TabsOptions } from "./types/general";
 import { useNotification } from "./NotificationProvider";
 import { handleRequest } from "./requests";
 import { messages } from "./constants";
-
+import async from 'async';
 
 export default function ControlPanel() {
     const { pushNotification } = useNotification();
-
-    const [blockWSRefresh, setBlockWSRefresh] = useState<boolean>(false);
 
     const [activeTab, setActiveTab] = useState<TabsOptions>("state");
     const [controlTabs, setControlTabs] = useState<ControlModes>("pid");
@@ -30,6 +28,13 @@ export default function ControlPanel() {
     const [lh, setLH] = useState<number>(0);
     const [hh, setHH] = useState<number>(0);
 
+    const [kpBackup, setKpBackup] = useState<number>(kp);
+    const [kiBackup, setKiBackup] = useState<number>(kp);
+    const [kdBackup, setKdBackup] = useState<number>(kp);
+
+    const [lHysteresisBackup, setLHysteresisBackup] = useState<number>(lh);
+    const [hHysteresisBackup, setHHysteresisBackup] = useState<number>(lh);
+
 
     useEffect(() => {
         const websocketUrl = `ws://4.4.4.1/ws`;
@@ -40,7 +45,7 @@ export default function ControlPanel() {
         };
 
         socket.onmessage = (event) => {
-            if (!blockWSRefresh) handleComponentRefresh(JSON.parse(event.data) as DeviceState);
+            handleComponentRefresh(JSON.parse(event.data) as DeviceState);
         };
 
         socket.onclose = () => {
@@ -55,7 +60,7 @@ export default function ControlPanel() {
         return () => {
             socket.close();
         };
-    }, []);
+    }, [pushNotification]);
 
     const handleComponentRefresh = (data: DeviceState) => {
         console.log(data);
@@ -64,20 +69,36 @@ export default function ControlPanel() {
         if (data.heater_enabled !== undefined) setHeatingEnabled(data.heater_enabled);
         if (data.control_mode !== undefined) setControlMode(data.control_mode);
         if (data.setpoint !== undefined) setSetpoint(data.setpoint);
-        if (data.kp !== undefined) setKp(data.kp);
-        if (data.ki !== undefined) setKi(data.ki);
-        if (data.kd !== undefined) setKd(data.kd);
-        if (data.hh !== undefined) setHH(data.hh);
-        if (data.lh !== undefined) setLH(data.lh);
-    };
 
-    // const handleHeaterToggle = useCallback(() => {
-    //     setHeatingEnabled((prev) => !prev);
-    // }, []);
+        if (data.kp !== undefined) {
+            setKp(data.kp);
+            setKpBackup(data.kp);
+        }
+
+        if (data.ki !== undefined) {
+            setKi(data.ki);
+            setKiBackup(data.ki)
+        }
+
+        if (data.kd !== undefined) {
+            setKd(data.kd);
+            setKdBackup(data.kd)
+        }
+
+        if (data.hh !== undefined) {
+            setHH(data.hh);
+            setHHysteresisBackup(data.hh);
+        }
+
+        if (data.lh !== undefined) {
+            setLH(data.lh);
+            setLHysteresisBackup(data.lh);
+        }
+    };
 
     const onError = useCallback(() => {
         pushNotification({ message: "Ocorreu um erro na requisição!", level: "error" });
-    }, []);
+    }, [pushNotification]);
 
     const handleToggleHeatingElement = useCallback((newMode: boolean) => {
         handleRequest("/state/set/heater", { heater_enable: newMode }).then(res => {
@@ -86,7 +107,7 @@ export default function ControlPanel() {
         }
         )
             .catch(onError);
-    }, []);
+    }, [onError, pushNotification]);
 
     const handleControlModeChanges = useCallback((mode: number) => {
         handleRequest("/state/set/control", { mode: mode }).then(res => {
@@ -95,19 +116,103 @@ export default function ControlPanel() {
         }
         )
             .catch(onError);
-    }, []);
+    }, [onError, pushNotification]);
 
     const handleSetpointChanges = useCallback((setpoint: number) => {
         handleRequest("/state/set/setpoint", { setpoint: setpoint }).then(res => {
-            if (res) pushNotification({ message: `${messages.setpointAdjustedTo} ${setpoint}`, level: "success" });
+            if (res) pushNotification({ message: `${messages.setpointAdjustedTo} ${setpoint}ºC`, level: "success" });
             else onError();
         }
         )
             .catch(onError);
-    }, []);
+    }, [onError, pushNotification]);
+
+    const handlePIDChanges = useCallback((volatile: boolean = false) => {
+        const requestQueue: Array<() => Promise<any>> = [];
+
+        const sendRequest = (param: string, valor: number) => {
+            return handleRequest(`/state/set/${param}`, { [param]: valor, volatile: volatile })
+                .then((res) => {
+                    if (res) {
+                        pushNotification({
+                            message: `${param} ajustado para ${valor}`,
+                            level: "success",
+                        });
+                    } else {
+                        onError();
+                    }
+                })
+                .catch(onError);
+        };
+
+        if (kp !== kpBackup) requestQueue.push(() => sendRequest("kp", parseFloat(`${kp}`)));
+        if (ki !== kiBackup) requestQueue.push(() => sendRequest("ki", parseFloat(`${ki}`)));
+        if (kd !== kdBackup) requestQueue.push(() => sendRequest("kd", parseFloat(`${kd}`)));
+
+        if (requestQueue.length > 0) {
+            async.series(
+                requestQueue.map((requestFn) => (callback: (err: any, result: any) => void) => {
+                    requestFn()
+                        .then(() => callback(null, true))
+                        .catch((err) => callback(err, null));
+                }),
+                (err, results) => {
+                    if (err) {
+                        pushNotification({ message: `Erro na execução das requisições: ${err}`, level: "error" });
+                    } else {
+                        pushNotification({ message: "Todas as requisições foram processadas com sucesso!", level: "success" });
+                    }
+                }
+            );
+        } else {
+            pushNotification({ message: "Nenhuma modificação nos valores!", level: "info" });
+        }
+    }, [onError, pushNotification, kp, ki, kd]);
+
+    const handleHysteresisChanges = useCallback(() => {
+        const requestQueue: Array<() => Promise<any>> = [];
+
+        const sendRequest = (param: string, valor: number) => {
+            return handleRequest(`/state/set/${param}`, { [param]: valor })
+                .then((res) => {
+                    if (res) {
+                        pushNotification({
+                            message: `${param} ajustado para ${valor}`,
+                            level: "success",
+                        });
+                    } else {
+                        onError();
+                    }
+                })
+                .catch(onError);
+        };
+
+        if (hh !== hHysteresisBackup) requestQueue.push(() => sendRequest("hh", parseFloat(`${hh}`)));
+        if (lh !== lHysteresisBackup) requestQueue.push(() => sendRequest("lh", parseFloat(`${lh}`)));
+
+        if (requestQueue.length > 0) {
+            async.series(
+                requestQueue.map((requestFn) => (callback: (err: any, result: any) => void) => {
+                    requestFn()
+                        .then(() => callback(null, true))
+                        .catch((err) => callback(err, null));
+                }),
+                (err, results) => {
+                    if (err) {
+                        pushNotification({ message: `Erro na execução das requisições: ${err}`, level: "error" });
+                    } else {
+                        pushNotification({ message: "Todas as requisições foram processadas com sucesso!", level: "success" });
+                    }
+                }
+            );
+        } else {
+            pushNotification({ message: "Nenhuma modificação nos valores!", level: "info" });
+        }
+    }, [onError, pushNotification, kp, ki, kd]);
+
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="flex items-center justify-center min-h-screen bg-blue-100">
             <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-lg">
                 <Tabs.Root value={activeTab} onValueChange={(e) => setActiveTab(e as TabsOptions)}>
                     <Tabs.List className="flex mb-4 border-b">
@@ -152,11 +257,6 @@ export default function ControlPanel() {
                                 <ToggleGroup.Root
                                     type="single"
                                     value={controlMode === 1 ? "pid" : "hysteresis"}
-                                    onValueChange={(value) => {
-                                        // if (value) {
-                                        //     setControlMode(value === "pid" ? 1 : 0);
-                                        // }
-                                    }}
                                     className="flex space-x-2"
                                 >
                                     <ToggleGroup.Item
@@ -187,7 +287,6 @@ export default function ControlPanel() {
                                 max={135}
                                 step={1}
                                 disabled={heatingEnabled}
-                                onClick={() => null}
                             >
                                 <Slider.Track className="bg-gray-200 relative grow rounded-full h-2">
                                     <Slider.Range className="absolute bg-blue-500 rounded-full h-full" />
@@ -253,12 +352,12 @@ export default function ControlPanel() {
                                         step="0.001"
                                     />
                                 </div>
-                                <Button className="w-full bg-black text-white hover:bg-gray-800">Testar</Button>
-                                <Button className="w-full bg-black text-white hover:bg-gray-800">Aplicar alterações</Button>
+                                <Button onClick={() => handlePIDChanges(true)} className="w-full bg-black text-white hover:bg-gray-800">Testar</Button>
+                                <Button onClick={() => handlePIDChanges(false)} className="w-full bg-black text-white hover:bg-gray-800">Aplicar alterações</Button>
                             </Tabs.Content>
                             <Tabs.Content value="hysteresis" className="space-y-4">
                                 <div>
-                                    <Label htmlFor="hh">Limite superior</Label>
+                                    <Label htmlFor="hh">Limiar superior</Label>
                                     <Input
                                         id="hh"
                                         type="number"
@@ -268,7 +367,7 @@ export default function ControlPanel() {
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="lh">Limite inferior</Label>
+                                    <Label htmlFor="lh">Limiar inferior</Label>
                                     <Input
                                         id="lh"
                                         type="number"
@@ -277,7 +376,7 @@ export default function ControlPanel() {
                                         step="1"
                                     />
                                 </div>
-                                <Button className="w-full bg-black text-white hover:bg-gray-800">Aplicar alterações</Button>
+                                <Button onClick={() => handleHysteresisChanges()} className="w-full bg-black text-white hover:bg-gray-800">Aplicar alterações</Button>
                             </Tabs.Content>
                         </Tabs.Root>
                     </Tabs.Content>
