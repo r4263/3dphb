@@ -1,5 +1,12 @@
 #include <src/hmi/lv_functions.h>
 
+bool blocked_knob = false, outState;
+int32_t cpuTemperature;
+float bedTemp, setpoint;
+
+std::map<String, double>
+    lastState;
+
 // void beep_ui_pressed(lv_event_t *e)
 // {
 //     lv_event_code_t event_code = lv_event_get_code(e);
@@ -11,10 +18,42 @@
 
 void ui_refresh_func(lv_timer_t *timer)
 {
-    float bedTemp = (float)APPLICATION_STATE.getBedTemperature();
-    lv_label_set_text_fmt(ui_cpuTempLabel, "CPU: %d°C", (int32_t)APPLICATION_STATE.getCPUTemperature());
-    lv_label_set_text_fmt(ui_temperatureMeterLabel, "%.1f°C", bedTemp);
-    lv_bar_set_value(ui_meterBar, bedTemp, LV_ANIM_ON);
+    cpuTemperature = (int32_t)APPLICATION_STATE.getCPUTemperature();
+    bedTemp = (float)APPLICATION_STATE.getBedTemperature();
+    setpoint = (float)APPLICATION_STATE.getSetpoint();
+    outState = APPLICATION_STATE.getOutputState();
+
+    if (lastState["cpu_temp"] != cpuTemperature)
+    {
+        lv_label_set_text_fmt(ui_cpuTempLabel, "CPU: %d°C", cpuTemperature);
+    }
+
+    if (lastState["bed_temp"] != bedTemp)
+    {
+        lv_label_set_text_fmt(ui_temperatureMeterLabel, "%.1f°C", bedTemp);
+        lv_bar_set_value(ui_meterBar, bedTemp, LV_ANIM_ON);
+    }
+
+    if (!blocked_knob)
+    {
+        if (lastState["setpoint"] != setpoint)
+        {
+            DEVICE.beep(BEEP);
+            lv_label_set_text_fmt(ui_temperatureKnobLabel, "%.0f°C", setpoint);
+            lv_arc_set_value(ui_temperatureKnob, setpoint);
+        }
+    }
+
+    if (outState != lastState["out"])
+    {
+        DEVICE.beep(BEEP);
+        outState ? toggledOn() : toggledOff();
+    }
+
+    lastState["bed_temp"] = bedTemp;
+    lastState["setpoint"] = setpoint;
+    lastState["cpu_temp"] = cpuTemperature;
+    lastState["out"] = outState;
 }
 
 void init_btn_event_cb(lv_event_t *e)
@@ -69,8 +108,46 @@ void about_btn_event_cb(lv_event_t *e)
 
 void slider_handler_event_cb(lv_event_t *e)
 {
+    lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t *slider = (lv_obj_t *)lv_event_get_target(e);
-    ledcWrite(0, map(lv_bar_get_value(slider), 0, 100, 20, 1023));
+
+    uint8_t b = lv_bar_get_value(slider);
+
+    switch (code)
+    {
+    case LV_EVENT_RELEASED:
+        updateDatabase("brightness", (String)b);
+        break;
+
+    default:
+        ledcWrite(TFT_CHANNEL, map(b, 0, 100, 20, 1023));
+        break;
+    }
+}
+
+void knob_handler_cb(lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+
+    switch (code)
+    {
+    case LV_EVENT_PRESSED:
+        DEVICE.beep(BEEP);
+        blocked_knob = true;
+        break;
+
+    case LV_EVENT_RELEASED:
+        DEVICE.beep(BEEP);
+
+        lv_obj_t *slider = (lv_obj_t *)lv_event_get_target(e);
+
+        uint8_t fval = map(lv_bar_get_value(slider), 135, 405, 30, 135);
+        APPLICATION_STATE.setSetpoint(fval);
+        updateDatabase("setpoint", (String)fval);
+
+        blocked_knob = false;
+        break;
+    }
 }
 
 void ui_event_enableWiFi(lv_event_t *e)
@@ -82,22 +159,12 @@ void ui_event_enableWiFi(lv_event_t *e)
     if (lv_obj_has_state(target, LV_STATE_CHECKED))
     {
         lv_label_set_text(ui_Label3, "Ligado");
-
-        // if (xSemaphoreTake(globalStateMutex, portMAX_DELAY))
-        // {
-        //     // STATE.wifi_enable = true;
-        //     xSemaphoreGive(globalStateMutex);
-        // }
+        NETWORK_STATE.setWiFiMode(WiFiMode::AP_MODE);
     }
     else
     {
         lv_label_set_text(ui_Label3, "Desligado");
-
-        // if (xSemaphoreTake(globalStateMutex, portMAX_DELAY))
-        // {
-        //     // STATE.wifi_enable = false;
-        //     xSemaphoreGive(globalStateMutex);
-        // }
+        NETWORK_STATE.setWiFiMode(WiFiMode::IDLE);
     }
 }
 
@@ -109,40 +176,40 @@ void ui_event_enableHeater(lv_event_t *e)
 
     if (lv_obj_has_state(target, LV_STATE_CHECKED))
     {
-        lv_label_set_text(ui_enableHeaterLabel, "Desabilitar");
-        lv_obj_remove_flag(ui_temperatureKnob, LV_OBJ_FLAG_CLICKABLE);
-
-        lv_obj_set_style_arc_color(ui_temperatureKnob, lv_color_hex(0xDB3A70), LV_PART_INDICATOR | LV_STATE_DEFAULT);
-        lv_obj_set_style_arc_opa(ui_temperatureKnob, 255, LV_PART_INDICATOR | LV_STATE_DEFAULT);
-
-        lv_obj_set_style_bg_color(ui_temperatureKnob, lv_color_hex(0xBC2222), LV_PART_KNOB | LV_STATE_DEFAULT);
-        lv_obj_set_style_bg_opa(ui_temperatureKnob, 255, LV_PART_KNOB | LV_STATE_DEFAULT);
-
-        // if (xSemaphoreTake(globalStateMutex, portMAX_DELAY))
-        // {
-        //     // STATE.enable_output = true;
-
-        //     xSemaphoreGive(globalStateMutex);
-        // }
+        toggledOn();
+        APPLICATION_STATE.setOutputState(true);
     }
     else
     {
-        lv_label_set_text(ui_enableHeaterLabel, "Habilitar");
-        lv_obj_add_flag(ui_temperatureKnob, LV_OBJ_FLAG_CLICKABLE);
-
-        lv_obj_set_style_arc_color(ui_temperatureKnob, lv_color_hex(0x2095F6), LV_PART_INDICATOR | LV_STATE_DEFAULT);
-        lv_obj_set_style_arc_opa(ui_temperatureKnob, 255, LV_PART_INDICATOR | LV_STATE_DEFAULT);
-
-        lv_obj_set_style_bg_color(ui_temperatureKnob, lv_color_hex(0x2095F6), LV_PART_KNOB | LV_STATE_DEFAULT);
-        lv_obj_set_style_bg_opa(ui_temperatureKnob, 255, LV_PART_KNOB | LV_STATE_DEFAULT);
-
-        // if (xSemaphoreTake(globalStateMutex, portMAX_DELAY))
-        // {
-        //     // STATE.enable_output = false;
-
-        //     xSemaphoreGive(globalStateMutex);
-        // }
+        toggledOff();
+        APPLICATION_STATE.setOutputState(false);
     }
+}
+
+void toggledOn()
+{
+    lv_label_set_text(ui_enableHeaterLabel, "Desabilitar");
+    lv_obj_add_state(ui_enableHeater, LV_STATE_CHECKED);
+
+    lv_obj_remove_flag(ui_temperatureKnob, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_style_arc_color(ui_temperatureKnob, lv_color_hex(0xDB3A70), LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    lv_obj_set_style_arc_opa(ui_temperatureKnob, 255, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+
+    lv_obj_set_style_bg_color(ui_temperatureKnob, lv_color_hex(0xBC2222), LV_PART_KNOB | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_temperatureKnob, 255, LV_PART_KNOB | LV_STATE_DEFAULT);
+}
+
+void toggledOff()
+{
+    lv_label_set_text(ui_enableHeaterLabel, "Habilitar");
+    lv_obj_add_flag(ui_temperatureKnob, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_remove_state(ui_enableHeater, LV_STATE_CHECKED);
+
+    lv_obj_set_style_arc_color(ui_temperatureKnob, lv_color_hex(0x2095F6), LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    lv_obj_set_style_arc_opa(ui_temperatureKnob, 255, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+
+    lv_obj_set_style_bg_color(ui_temperatureKnob, lv_color_hex(0x2095F6), LV_PART_KNOB | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_temperatureKnob, 255, LV_PART_KNOB | LV_STATE_DEFAULT);
 }
 
 void bass_tone_btn_event_cb(lv_event_t *e)

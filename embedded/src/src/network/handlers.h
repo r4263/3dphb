@@ -22,6 +22,7 @@
               {                                                                                         \
                   if (!validateRequest(request, data, len))                                             \
                   {                                                                                     \
+                      Serial.println(validateRequest(request, data, len));                              \
                       request->send(401);                                                               \
                       return;                                                                           \
                   }                                                                                     \

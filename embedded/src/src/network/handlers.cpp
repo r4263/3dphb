@@ -45,13 +45,11 @@ void handleModeTransitioning(WiFiMode &lastMode,
         {
         case AP_MODE:
             WiFi.mode(WIFI_AP);
-            Serial.println("AP MODE INIT");
             startSoftAccessPoint(ssid, password, localIP, gatewayIP, subnetMask);
             break;
 
         case STA_MODE:
             WiFi.mode(WIFI_STA);
-            Serial.println("STA MODE INIT");
             netState.connected(connect(netState.getSTASSID(), netState.getSTAPWK(), 25, 250) == WL_CONNECTED);
             break;
         }
@@ -64,6 +62,7 @@ void handleModeTransitioning(WiFiMode &lastMode,
     }
 }
 
+// handler for getting only the updated data to send for the websocket connected client
 String gatherUpdatedData(void)
 {
     JsonDocument jsonResponse;
@@ -174,7 +173,7 @@ String gatherSystemData()
 void setUpAPIServer(AsyncWebServer &server)
 {
     server.on("*", HTTP_OPTIONS, [](AsyncWebServerRequest *request)
-              { request->send(204); }); //
+              { request->send(204); });
 
     ATTACHROUTE("/state/get", server, {
         request->send(200, "application/json", gatherSystemData());

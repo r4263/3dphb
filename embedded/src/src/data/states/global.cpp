@@ -65,6 +65,24 @@ uint16_t GlobalState::getPWM(void)
 //     return this->filesystem;
 // }
 
+// Brightness
+void GlobalState::setBrightness(uint8_t b)
+{
+    SEMAPHORE_WRAPPER(globalStateMutex, {
+        this->brightness = b;
+    });
+}
+
+uint8_t GlobalState::getBrightness(void)
+{
+    uint8_t b;
+    SEMAPHORE_WRAPPER(globalStateMutex, {
+        b = this->brightness;
+    });
+
+    return b;
+};
+
 // Beep Tone
 void GlobalState::setTone(BeepTone tone)
 {

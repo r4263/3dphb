@@ -10,9 +10,7 @@ void initializePinout(void)
     ledcAttachPin(HEATER_PWM, HEATER_CHANNEL);
     ledcAttachPin(BUZZER, BUZZER_CHANNEL);
 
-    ledcWrite(TFT_CHANNEL, 512);
-    ledcWrite(HEATER_CHANNEL, 512);
-    ledcWrite(BUZZER_CHANNEL, 0);
+    ledcWrite(TFT_CHANNEL, map(APPLICATION_STATE.getBrightness(), 0, 100, 20, 1023));
 
     pinMode(PWR, OUTPUT);
     pinMode(NTC_PIN, INPUT);

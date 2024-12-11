@@ -84,62 +84,21 @@ void bindUItoFuncs()
     lv_obj_add_event_cb(ui_init1, init_btn_event_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_add_event_cb(ui_connectivity, conn_btn_event_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_add_event_cb(ui_display1, display_btn_event_cb, LV_EVENT_CLICKED, NULL);
-    lv_obj_add_event_cb(ui_sonority, sonority_btn_event_cb, LV_EVENT_CLICKED, NULL);
+    // lv_obj_add_event_cb(ui_sonority, sonority_btn_event_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_add_event_cb(ui_others, about_btn_event_cb, LV_EVENT_CLICKED, NULL);
 
-    lv_obj_add_event_cb(ui_applyBeepButton, apply_tone_btn_event_cb, LV_EVENT_CLICKED, NULL);
-    lv_obj_add_event_cb(ui_testButton, test_tone_btn_event_cb, LV_EVENT_CLICKED, NULL);
-
-    lv_obj_add_event_cb(ui_bassButton, bass_tone_btn_event_cb, LV_EVENT_CLICKED, NULL);
-    lv_obj_add_event_cb(ui_mediumButton, medium_tone_btn_event_cb, LV_EVENT_CLICKED, NULL);
-    lv_obj_add_event_cb(ui_highButton, high_tone_btn_event_cb, LV_EVENT_CLICKED, NULL);
-
-    lv_obj_add_event_cb(ui_shortDurationButton, short_duration_btn_event_cb, LV_EVENT_CLICKED, NULL);
-    lv_obj_add_event_cb(ui_normalDurationButton, normal_duration_btn_event_cb, LV_EVENT_CLICKED, NULL);
-    lv_obj_add_event_cb(ui_mediumDurationButton, medium_duration_btn_event_cb, LV_EVENT_CLICKED, NULL);
-    lv_obj_add_event_cb(ui_longDurationButton, long_duration_btn_event_cb, LV_EVENT_CLICKED, NULL);
-
     // Temperature knob binding
-    lv_subject_init_int(&temperatureKnobValue, 30);
+    lv_subject_init_int(&temperatureKnobValue, APPLICATION_STATE.getSetpoint());
     lv_label_bind_text(ui_temperatureKnobLabel, &temperatureKnobValue, "%d °C");
     lv_arc_bind_value(ui_temperatureKnob, &temperatureKnobValue);
 
-    // static lv_subject_t value;
-    // lv_subject_init_int(&value, 30); // Initial temperature value
-
-    // lv_obj_t *arc = lv_arc_create(lv_scr_act());
-    // lv_obj_set_size(arc, 200, 200);
-    // lv_obj_center(arc);
-    // lv_arc_set_range(arc, 0, 135);
-
-    // // Set the start and end angles for the arc
-    // lv_arc_set_start_angle(arc, 0); // 0 degrees
-    // lv_arc_set_end_angle(arc, 270); // 270 degrees (representing 135ºC)
-
-    // // Bind the temperature value to the arc
-    // lv_arc_bind_value(arc, &value);
-
-    // // Set styles for the arc
-    // lv_obj_set_style_arc_opa(arc, LV_OPA_50, LV_PART_MAIN);
-    // lv_obj_set_style_arc_color(arc, lv_color_hex(0xffffff), LV_PART_INDICATOR);
-    // lv_obj_set_style_bg_color(arc, lv_color_hex(0xffffff), LV_PART_KNOB);
-    // lv_obj_set_style_shadow_width(arc, 15, LV_PART_KNOB);
-    // lv_obj_set_style_shadow_opa(arc, LV_OPA_40, LV_PART_KNOB);
-    // lv_obj_set_style_shadow_offset_y(arc, 5, LV_PART_KNOB);
-
-    // // Create a label to display the temperature
-    // lv_obj_t *label = lv_label_create(arc);
-    // lv_obj_center(label);
-    // lv_label_bind_text(label, &value, "%d °C");
-    // lv_obj_set_style_text_font(label, &lv_font_montserrat_32, 0);
+    lv_obj_add_event_cb(ui_temperatureKnob, knob_handler_cb, LV_EVENT_ALL, NULL);
 
     // Brightness label && slider binding/processing
-    lv_subject_init_int(&brightnessValue, 100);
+    lv_subject_init_int(&brightnessValue, APPLICATION_STATE.getBrightness());
     lv_slider_bind_value(ui_brightnessSlider, &brightnessValue);
     lv_label_bind_text(ui_brightnessLevelLabel, &brightnessValue, "%d %");
-    lv_obj_add_event_cb(ui_brightnessSlider, slider_handler_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
-
-    // lv_subject_init_int(&temperatureKnobValue, (int)STATE.bed_temp);
+    lv_obj_add_event_cb(ui_brightnessSlider, slider_handler_event_cb, LV_EVENT_ALL, NULL);
 
     // enable heater button handler
     lv_obj_add_event_cb(ui_enableHeater, ui_event_enableHeater, LV_EVENT_VALUE_CHANGED, NULL);
@@ -278,21 +237,21 @@ void renderMenu(void)
     lv_label_set_text(ui_settingsLabel, "Configuracoes");
     lv_obj_set_style_text_font(ui_settingsLabel, &lv_font_montserrat_10, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_sonority = lv_button_create(ui_control);
-    lv_obj_set_width(ui_sonority, 84);
-    lv_obj_set_height(ui_sonority, 29);
-    lv_obj_set_x(ui_sonority, -1);
-    lv_obj_set_y(ui_sonority, 2);
-    lv_obj_set_align(ui_sonority, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_sonority, LV_OBJ_FLAG_SCROLL_ON_FOCUS); /// Flags
-    lv_obj_remove_flag(ui_sonority, LV_OBJ_FLAG_SCROLLABLE);   /// Flags
+    // ui_sonority = lv_button_create(ui_control);
+    // lv_obj_set_width(ui_sonority, 84);
+    // lv_obj_set_height(ui_sonority, 29);
+    // lv_obj_set_x(ui_sonority, -1);
+    // lv_obj_set_y(ui_sonority, 2);
+    // lv_obj_set_align(ui_sonority, LV_ALIGN_CENTER);
+    // lv_obj_add_flag(ui_sonority, LV_OBJ_FLAG_SCROLL_ON_FOCUS); /// Flags
+    // lv_obj_remove_flag(ui_sonority, LV_OBJ_FLAG_SCROLLABLE);   /// Flags
 
-    ui_sonorityLabel = lv_label_create(ui_sonority);
-    lv_obj_set_width(ui_sonorityLabel, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_height(ui_sonorityLabel, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_align(ui_sonorityLabel, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_sonorityLabel, "Sonoridade");
-    lv_obj_set_style_text_font(ui_sonorityLabel, &lv_font_montserrat_10, LV_PART_MAIN | LV_STATE_DEFAULT);
+    // ui_sonorityLabel = lv_label_create(ui_sonority);
+    // lv_obj_set_width(ui_sonorityLabel, LV_SIZE_CONTENT);  /// 1
+    // lv_obj_set_height(ui_sonorityLabel, LV_SIZE_CONTENT); /// 1
+    // lv_obj_set_align(ui_sonorityLabel, LV_ALIGN_CENTER);
+    // lv_label_set_text(ui_sonorityLabel, "Sonoridade");
+    // lv_obj_set_style_text_font(ui_sonorityLabel, &lv_font_montserrat_10, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_initContentContainer = lv_obj_create(ui_screen);
     lv_obj_remove_style_all(ui_initContentContainer);

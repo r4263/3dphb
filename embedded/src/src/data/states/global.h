@@ -20,6 +20,7 @@ typedef struct GlobalState
     double kd = 0;
     uint8_t lh = 0;
     uint8_t hh = 0;
+    uint8_t brightness;
     ControlModes control_mode;
     boolean updatedPIDTunnings = false;
     boolean updatedPIDSetpoint = false;
@@ -32,6 +33,10 @@ typedef struct GlobalState
     // boolean fsState = false;
 
     // Getters and setters
+
+    void setBrightness(uint8_t b);
+    uint8_t getBrightness(void);
+
     // Output PWM
     void setPWM(uint16_t pwm);
     uint16_t getPWM(void);

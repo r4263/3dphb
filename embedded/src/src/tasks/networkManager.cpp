@@ -25,7 +25,8 @@ void networkManager(void *pvParameters)
   setUpAPIServer(api);
 
   // NETWORK_STATE.setWiFiMode(STA_MODE);
-  NETWORK_STATE.setWiFiMode(AP_MODE);
+  // NETWORK_STATE.setWiFiMode(AP_MODE);
+  NETWORK_STATE.setWiFiMode(IDLE);
 
   /* Default headers */
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");

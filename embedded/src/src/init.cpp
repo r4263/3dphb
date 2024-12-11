@@ -28,6 +28,10 @@ void initApplicationVitals(void)
     APPLICATION_STATE.setLowerHysteresisValue(storedData[0]["lh"].as<uint8_t>());
     APPLICATION_STATE.setSetpoint(storedData[0]["setpoint"].as<double>());
     APPLICATION_STATE.setControlMode(storedData[0]["control_mode"].as<ControlModes>());
+    APPLICATION_STATE.setBrightness(storedData[0]["brightness"].as<uint8_t>());
+
+    Serial.println(storedData[0]["brightness"].as<uint8_t>());
+    Serial.println(APPLICATION_STATE.getBrightness());
 
     // Freeing the used memory
     storedData.clear();

@@ -2,12 +2,15 @@
 #define LV_FUNCTIONS_H
 
 #include <src/definitions.h>
+#include <src/data/queries/defaults.h>
+#include <map>
 
 extern void ui_refresh_func(lv_timer_t *timer);
 extern void init_btn_event_cb(lv_event_t *e);
 extern void conn_btn_event_cb(lv_event_t *e);
 extern void display_btn_event_cb(lv_event_t *e);
 extern void slider_handler_event_cb(lv_event_t *e);
+extern void knob_handler_cb(lv_event_t *e);
 extern void ui_event_enableHeater(lv_event_t *e);
 extern void _ui_checked_set_text_value(lv_obj_t *trg, lv_obj_t *src, const char *txt_on, const char *txt_off);
 extern void ui_event_enableHeater(lv_event_t *e);
@@ -26,5 +29,8 @@ extern void test_tone_btn_event_cb(lv_event_t *e);
 extern void setToneButtonBehaviour(void);
 extern void setDurationButtonBehaviour(void);
 // extern void beep_ui_pressed(lv_event_t *e);
+
+extern void toggledOn();
+extern void toggledOff();
 
 #endif
