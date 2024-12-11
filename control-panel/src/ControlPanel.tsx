@@ -13,7 +13,6 @@ import async from 'async';
 
 export default function ControlPanel() {
     const { pushNotification } = useNotification();
-
     const [activeTab, setActiveTab] = useState<TabsOptions>("state");
     const [controlTabs, setControlTabs] = useState<ControlModes>("pid");
 
@@ -35,9 +34,9 @@ export default function ControlPanel() {
     const [lHysteresisBackup, setLHysteresisBackup] = useState<number>(lh);
     const [hHysteresisBackup, setHHysteresisBackup] = useState<number>(lh);
 
-
     useEffect(() => {
-        const websocketUrl = `ws://4.4.4.1/ws`;
+        const websocketUrl = `ws://${window.location.hostname}/ws`;
+        // const websocketUrl = `ws://4.4.4.1/ws`;
         const socket = new WebSocket(websocketUrl);
 
         socket.onopen = () => {

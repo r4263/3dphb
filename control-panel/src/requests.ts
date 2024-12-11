@@ -1,22 +1,13 @@
 import { sha256 } from "js-sha256";
 
-function getIpHash(): string {
-    // const ip = window.location.hostname;
-    const ip = "4.4.4.2";
-    return sha256(ip);
-}
-
-const defaultBodyArgs = {
-    token: getIpHash()
-}
-
 export async function handleRequest(route: string, bodyPart: any) {
     try {
-        const response = await fetch(`http://4.4.4.1:9000${route}`, {
+        const response = await fetch(`http://${window.location.hostname}:9000${route}`, {
+            // const response = await fetch(`http://4.4.4.1:9000${route}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                ...defaultBodyArgs,
+                token: sha256(window.location.hostname),
                 ...bodyPart
             }),
         });
